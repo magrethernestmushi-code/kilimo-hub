@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Digital Kilimo Hub · Mkulima</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0c0f0a;--surface:#141710;--card:#1c2018;--border:#2a3024;--border2:#1e2419;
+  --green:#5a9e52;--green2:#3d7a35;--glow:#7cc874;--gold:#d4943a;--amber:#c07828;
+  --sky:#5898c8;--red:#d45858;--text:#e8ede4;--muted:#6a7a62;--dim:#3a4a34;
+  --font-h:'Fraunces',Georgia,serif; --font-b:'Plus Jakarta Sans',system-ui,sans-serif;
+  --r:16px; --rs:10px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:var(--font-b);color:var(--text);}
+#root{display:flex;width:100vw;height:100vh;}
+
+/* SIDEBAR */
+.sidebar{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:relative;}
+.sidebar::before{content:'';position:absolute;top:0;left:0;right:0;height:160px;background:radial-gradient(ellipse at 50% 0%,rgba(90,158,82,.14),transparent 70%);pointer-events:none;}
+.sb-logo{padding:26px 18px 20px;border-bottom:1px solid var(--border);position:relative;z-index:1;}
+.sb-mark{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,var(--green2),var(--green));display:flex;align-items:center;justify-content:center;font-size:21px;margin-bottom:10px;box-shadow:0 6px 20px rgba(90,158,82,.35);}
+.sb-name{font-family:var(--font-h);font-size:15px;font-weight:900;line-height:1.15;}
+.sb-name span{color:var(--green);}
+.sb-sub{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:4px;}
+.sb-nav{flex:1;padding:10px 10px;overflow-y:auto;}
+.sb-sec{font-size:9px;font-weight:700;color:var(--dim);letter-spacing:2px;text-transform:uppercase;padding:12px 8px 6px;}
+.sb-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--rs);cursor:pointer;font-size:12.5px;font-weight:500;color:var(--muted);transition:all .18s;margin-bottom:1px;position:relative;}
+.sb-item:hover{background:rgba(90,158,82,.08);color:var(--text);}
+.sb-item.on{background:rgba(90,158,82,.15);color:var(--glow);font-weight:700;}
+.sb-item.on::before{content:'';position:absolute;left:0;top:20%;height:60%;width:3px;background:var(--green);border-radius:0 3px 3px 0;}
+.sb-ico{font-size:16px;width:20px;text-align:center;flex-shrink:0;}
+.sb-bottom{padding:14px;border-top:1px solid var(--border);}
+.user-box{background:var(--card);border:1px solid var(--border);border-radius:var(--rs);padding:12px 14px;display:flex;align-items:center;gap:10px;}
+.user-av{width:34px;height:34px;background:linear-gradient(135deg,var(--amber),var(--gold));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.user-name{font-size:12px;font-weight:700;color:var(--text);}
+.user-role{font-size:9px;color:var(--muted);}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{padding:16px 26px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;position:relative;}
+.topbar::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% -60%,rgba(90,158,82,.05),transparent 60%);pointer-events:none;}
+.tb-left{position:relative;z-index:1;}
+.tb-title{font-family:var(--font-h);font-size:20px;font-weight:900;}
+.tb-sub{font-size:11px;color:var(--muted);margin-top:3px;}
+.tb-right{position:relative;z-index:1;display:flex;gap:10px;align-items:center;}
+.tb-time{font-size:11px;font-weight:700;color:var(--muted);background:var(--card);border:1px solid var(--border);padding:7px 14px;border-radius:var(--rs);font-family:var(--font-h);}
+.btn{font-size:12px;font-weight:700;padding:8px 18px;border-radius:var(--rs);cursor:pointer;font-family:inherit;border:none;transition:all .2s;}
+.btn-g{background:linear-gradient(135deg,var(--green2),var(--green));color:#fff;box-shadow:0 4px 14px rgba(90,158,82,.3);}
+.btn-g:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(90,158,82,.4);}
+.content{flex:1;overflow-y:auto;padding:24px 26px;}
+.content::-webkit-scrollbar{width:5px;}
+.content::-webkit-scrollbar-thumb{background:var(--border);border-radius:5px;}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:18px;}
+.card-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.card-title{font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px;}
+.grid31{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:18px;}
+.stat-g{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px;position:relative;overflow:hidden;cursor:pointer;transition:all .2s;}
+.stat-g:hover{border-color:rgba(90,158,82,.35);transform:translateY(-2px);}
+.stat-g::before{content:'';position:absolute;top:-25px;right:-25px;width:80px;height:80px;border-radius:50%;opacity:.06;background:var(--green);}
+.stat-lbl{font-size:9.5px;font-weight:700;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;}
+.stat-val{font-family:var(--font-h);font-size:26px;font-weight:900;color:var(--green);line-height:1;}
+.stat-sub{font-size:10px;color:var(--muted);margin-top:6px;}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;}
+th{padding:10px 16px;text-align:left;font-size:9.5px;font-weight:700;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;border-bottom:1px solid var(--border);}
+td{padding:12px 16px;font-size:12.5px;border-bottom:1px solid var(--border2);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(90,158,82,.025);}
+.badge{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;}
+.badge.g{background:rgba(90,158,82,.15);border:1px solid rgba(90,158,82,.3);color:var(--glow);}
+.badge.a{background:rgba(212,148,58,.15);border:1px solid rgba(212,148,58,.3);color:var(--gold);}
+.badge.b{background:rgba(88,152,200,.15);border:1px solid rgba(88,152,200,.3);color:var(--sky);}
+
+/* FORM */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.form-grid.one{grid-template-columns:1fr;}
+.form-grp{display:flex;flex-direction:column;gap:6px;}
+.form-lbl{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:1.2px;text-transform:uppercase;}
+.form-inp{background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:13px;padding:11px 14px;border-radius:var(--rs);font-family:inherit;outline:none;transition:border-color .2s;}
+.form-inp:focus{border-color:rgba(90,158,82,.5);}
+.form-sel{background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:13px;padding:11px 14px;border-radius:var(--rs);font-family:inherit;outline:none;width:100%;}
+
+/* PAGE ANIM */
+.page{display:none;}
+.page.on{display:block;animation:fu .28s ease both;}
+@keyframes fu{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* PROGRESS */
+.prog-bg{height:7px;background:var(--border);border-radius:7px;overflow:visible;position:relative;margin:8px 0;}
+.prog-fill{height:100%;border-radius:7px;background:linear-gradient(90deg,var(--green2),var(--glow));transition:width .5s;position:relative;}
+.prog-dot{position:absolute;right:-5px;top:50%;transform:translateY(-50%);width:13px;height:13px;background:var(--glow);border-radius:50%;border:2px solid var(--bg);}
+
+/* SCORE RING */
+.score-ring{position:relative;display:inline-flex;align-items:center;justify-content:center;}
+.score-ring svg{transform:rotate(-90deg);}
+.ring-val{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+
+/* TOAST */
+.toast-wrap{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
+.t-item{background:var(--card);border:1px solid rgba(90,158,82,.4);color:var(--glow);font-size:13px;font-weight:600;padding:12px 20px;border-radius:var(--r);box-shadow:0 8px 28px rgba(0,0,0,.5);animation:tin .3s ease both;display:flex;align-items:center;gap:8px;}
+.t-item.err{border-color:rgba(212,88,88,.4);color:var(--red);}
+.t-item.info{border-color:rgba(88,152,200,.4);color:var(--sky);}
+@keyframes tin{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
+@keyframes tout{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(16px)}}
+
+/* EMPTY */
+.empty{text-align:center;padding:50px 20px;}
+.empty-ico{font-size:44px;margin-bottom:12px;opacity:.4;}
+.empty-t{font-family:var(--font-h);font-size:17px;color:var(--muted);margin-bottom:6px;}
+.empty-s{font-size:12px;color:var(--dim);}
+
+/* WELCOME */
+.welcome{position:fixed;inset:0;background:var(--bg);z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.wglow{position:absolute;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(90,158,82,.12),transparent 70%);animation:pulse 4s ease-in-out infinite;}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.w-ico{font-size:60px;margin-bottom:20px;animation:drop .8s cubic-bezier(.34,1.56,.64,1) both;position:relative;z-index:1;}
+@keyframes drop{from{opacity:0;transform:scale(.3) rotate(-15deg)}to{opacity:1;transform:scale(1) rotate(0)}}
+.w-title{font-family:var(--font-h);font-size:38px;font-weight:900;text-align:center;line-height:1.05;position:relative;z-index:1;animation:fu .8s .2s ease both;}
+.w-title span{color:var(--green);}
+.w-sub{font-size:13px;color:var(--muted);margin-top:10px;text-align:center;position:relative;z-index:1;animation:fu .8s .35s ease both;}
+.w-bar{width:220px;height:3px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:36px;position:relative;z-index:1;animation:fu .8s .5s ease both;}
+.w-fill{height:100%;background:linear-gradient(90deg,var(--green2),var(--glow));animation:lbar 2.2s .6s ease both;}
+@keyframes lbar{from{width:0}to{width:100%}}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:5px;}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div class="welcome" id="welcome">
+  <div class="wglow"></div>
+  <div class="w-ico">🌾</div>
+  <div class="w-title">Digital <span>Kilimo</span> Hub</div>
+  <div class="w-sub">Mfumo wa Mkulima wa Dijiti · Tanzania 🇹🇿</div>
+  <div class="w-bar"><div class="w-fill"></div></div>
+</div>
+
+<div id="root" style="display:none">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-mark">🌾</div>
+      <div class="sb-name">Kilimo <span>Hub</span></div>
+      <div class="sb-sub">Mkulima App · Tanzania</div>
+    </div>
+    <div class="sb-nav">
+      <div class="sb-sec">Mkulima</div>
+      <div class="sb-item on" onclick="go('home')"><span class="sb-ico">🏠</span>Nyumbani</div>
+      <div class="sb-item" onclick="go('account')"><span class="sb-ico">🌱</span>Akaunti Yangu</div>
+      <div class="sb-sec">Biashara</div>
+      <div class="sb-item" onclick="go('groups')"><span class="sb-ico">🤝</span>Vikundi vya Pamoja</div>
+      <div class="sb-item" onclick="go('logistics')"><span class="sb-ico">🚛</span>Usafirishaji</div>
+      <div class="sb-item" onclick="go('market')"><span class="sb-ico">📈</span>Bei za Soko</div>
+      <div class="sb-item" onclick="go('credit')"><span class="sb-ico">🏦</span>Mkopo</div>
+    </div>
+    <div class="sb-bottom">
+      <div class="user-box">
+        <div class="user-av" id="user-av">🌱</div>
+        <div>
+          <div class="user-name" id="user-name">Mgeni</div>
+          <div class="user-role" id="user-role">Bonyeza Jiandikishe</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="tb-left">
+        <div class="tb-title" id="tb-title">🏠 Nyumbani</div>
+        <div class="tb-sub" id="tb-sub">Karibu kwenye Digital Kilimo Hub</div>
+      </div>
+      <div class="tb-right">
+        <div class="tb-time" id="clk">--:--</div>
+        <button class="btn btn-g" id="action-btn" onclick="go('account')">+ Ingia / Jiandikishe</button>
+      </div>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+<div class="toast-wrap" id="toasts"></div>
+
+<script>
+/* ═══ API ═══ (same-origin — this file is served by the API itself) */
+async function api(path, opts={}){
+  const headers={'Content-Type':'application/json', ...(opts.headers||{})};
+  if(authToken) headers['Authorization']='Bearer '+authToken;
+  const res=await fetch(path,{...opts,headers});
+  let data=null; try{ data=await res.json(); }catch(e){}
+  if(!res.ok){ const err=new Error((data&&data.detail)||'Hitilafu imetokea'); err.status=res.status; throw err; }
+  return data;
+}
+
+/* ═══ AUTH STATE ═══ */
+let authToken=localStorage.getItem('kilimo_token')||null;
+let me=null; // full user object from /auth/me
+let authMode='login'; // 'login' | 'register' — which form the account page shows
+
+async function refreshMe(){
+  if(!authToken){ me=null; return; }
+  try{ me=await api('/auth/me'); }
+  catch(e){ authToken=null; me=null; localStorage.removeItem('kilimo_token'); }
+}
+
+function requireLogin(){
+  if(!me){ toast('Ingia kwanza','err'); go('account'); return false; }
+  return true;
+}
+
+/* ═══ CLOCK ═══ */
+function tick(){ const n=new Date(),p=v=>String(v).padStart(2,'0'); document.getElementById('clk').textContent=p(n.getHours())+':'+p(n.getMinutes()); }
+tick(); setInterval(tick,1000);
+
+/* ═══ TOAST ═══ */
+function toast(msg,type='ok'){
+  const c=document.getElementById('toasts'),d=document.createElement('div');
+  d.className='t-item'+(type==='err'?' err':type==='info'?' info':'');
+  d.innerHTML=(type==='ok'?'✓':type==='err'?'✕':'ℹ')+' '+msg;
+  c.appendChild(d);
+  setTimeout(()=>{ d.style.animation='tout .3s ease both'; setTimeout(()=>d.remove(),300); },3000);
+}
+
+/* ═══ NAV ═══ */
+let curPage='home';
+const TITLES={ home:'🏠 Nyumbani', account:'🌱 Akaunti Yangu', groups:'🤝 Vikundi vya Pamoja', logistics:'🚛 Usafirishaji', market:'📈 Bei za Soko', credit:'🏦 Mkopo' };
+const SUBS={ home:'Karibu kwenye Digital Kilimo Hub · Tanzania', account:'Ingia au fungua akaunti mpya', groups:'Jiunge na kikundi kupata bei nzuri zaidi', logistics:'Pata usafirishaji rahisi na salama', market:'Bei za mazao sasa hivi Tanzania nzima', credit:'Alama yako ya uaminifu inakupa nguvu ya mkopo' };
+
+async function go(p){
+  curPage=p;
+  document.querySelectorAll('.sb-item').forEach(s=>s.classList.remove('on'));
+  document.querySelectorAll('.sb-item').forEach(s=>{ if(s.getAttribute('onclick')&&s.getAttribute('onclick').includes("'"+p+"'")) s.classList.add('on'); });
+  document.getElementById('tb-title').textContent=TITLES[p]||p;
+  document.getElementById('tb-sub').textContent=SUBS[p]||'';
+  const btn=document.getElementById('action-btn');
+  if(p==='account'||p==='home'){ btn.style.display=me?'none':''; btn.textContent='+ Ingia / Jiandikishe'; }
+  else btn.style.display='none';
+
+  const content=document.getElementById('content');
+  content.innerHTML='<div class="empty"><div class="empty-ico">🌾</div><div class="empty-t">Inapakia...</div></div>';
+  const renders={ home:renderHome, account:renderAccount, groups:renderGroups, logistics:renderLogistics, market:renderMarket, credit:renderCredit };
+  const fn=renders[p];
+  if(fn){
+    try{ content.innerHTML=await fn(); attachEvents(p); }
+    catch(e){ content.innerHTML=`<div class="empty"><div class="empty-ico">⚠️</div><div class="empty-t">Imeshindikana kupakia</div><div class="empty-s">${e.message}</div></div>`; }
+  }
+  updateUserBox();
+}
+
+function updateUserBox(){
+  if(me){
+    document.getElementById('user-av').textContent='👤';
+    document.getElementById('user-name').textContent=me.full_name;
+    const score=me.farmer_profile?me.farmer_profile.trust_score:null;
+    document.getElementById('user-role').textContent=score!=null?('Alama: '+score):me.role;
+  } else {
+    document.getElementById('user-av').textContent='🌱';
+    document.getElementById('user-name').textContent='Mgeni';
+    document.getElementById('user-role').textContent='Bonyeza Ingia/Jiandikishe';
+  }
+}
+
+/* ═══ HOME ═══ */
+async function renderHome(){
+  const [groups, trips, alerts, markets] = await Promise.all([
+    api('/groups/?status=Hai'), api('/logistics/?status=Inasubiri'), api('/alerts/'), api('/markets/')
+  ]);
+  const recentAlerts=alerts.slice(0,2);
+  return `
+  <div class="grid2">
+    <div class="stat-g" onclick="go('groups')"><div class="stat-lbl">Vikundi Vinavyosubiri</div><div class="stat-val">${groups.length}</div><div class="stat-sub">Bonyeza kujiunge →</div></div>
+    <div class="stat-g" style="--green:var(--gold)" onclick="go('logistics')"><div class="stat-lbl">Safari Zinazopatikana</div><div class="stat-val" style="color:var(--gold)">${trips.length}</div><div class="stat-sub">Panga usafirishaji →</div></div>
+  </div>
+  ${recentAlerts.length?`<div class="card" style="margin-bottom:18px">
+    <div class="card-head"><div class="card-title">⚠️ Tahadhari za Hivi Karibuni</div></div>
+    <div style="padding:0 0 4px">
+      ${recentAlerts.map(a=>`<div style="display:flex;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border2);align-items:flex-start">
+        <div style="width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0;background:${a.level==='Hatari'?'var(--red)':a.level==='Habari Njema'?'var(--green)':'var(--gold)'}"></div>
+        <div><div style="font-size:12px;font-weight:600">${a.alert_type} — ${a.region}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${a.message}</div></div>
+      </div>`).join('')}
+    </div>
+  </div>`:''}
+  <div class="grid31">
+    <div class="card">
+      <div class="card-head"><div class="card-title">🚀 Hatua za Kuanza</div></div>
+      <div style="padding:4px 0">
+        ${[['🌱',me?'Akaunti Yangu':'Ingia / Jiandikishe','Angalia taarifa zako','account'],['🤝','Vikundi vya Pamoja','Pata bei nzuri zaidi','groups'],['🚛','Panga Usafirishaji','Peleka mazao sokoni salama','logistics'],['🏦','Omba Mkopo','Tumia alama yako','credit']].map(([ic,t,s,pg])=>`
+        <div onclick="go('${pg}')" style="display:flex;gap:14px;align-items:center;padding:14px 20px;border-bottom:1px solid var(--border2);cursor:pointer;transition:padding-left .2s" onmouseover="this.style.paddingLeft='28px'" onmouseout="this.style.paddingLeft='20px'">
+          <div style="width:36px;height:36px;background:rgba(90,158,82,.14);border:1px solid rgba(90,158,82,.25);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">${ic}</div>
+          <div style="flex:1"><div style="font-weight:700;font-size:13px">${t}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${s}</div></div>
+          <div style="color:var(--dim);font-size:16px">›</div>
+        </div>`).join('')}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">📊 Bei Sasa</div></div>
+      <div style="padding:0 16px">
+        ${markets.slice(0,4).map(m=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border2)">
+          <span style="font-size:12px">${m.crop}</span>
+          <div style="text-align:right"><div style="font-family:var(--font-h);font-weight:700;font-size:13px">${Math.round(m.price_tzs).toLocaleString()}</div><div style="font-size:9px;color:${m.trending_up?'var(--green)':'var(--red)'}">${m.trending_up?'↑':'↓'} ${Math.abs(m.change_pct)}%</div></div>
+        </div>`).join('')}
+      </div>
+      <div style="padding:12px 16px"><button class="btn btn-g" style="width:100%;font-size:11px" onclick="go('market')">Bei Zote →</button></div>
+    </div>
+  </div>`;
+}
+
+/* ═══ ACCOUNT (login / register / profile) ═══ */
+async function renderAccount(){
+  if(me){
+    const fp=me.farmer_profile;
+    return `<div style="max-width:600px;margin:0 auto">
+    <div style="background:rgba(90,158,82,.1);border:1px solid rgba(90,158,82,.25);border-radius:var(--r);padding:18px 20px;margin-bottom:18px;display:flex;align-items:center;gap:12px">
+      <div style="font-size:28px">👤</div>
+      <div><div style="font-weight:700;font-size:14px">Umeingia, ${me.first_name}!</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${fp?`Alama yako: ${fp.trust_score}/1000 · Kiwango: ${fp.tier}`:me.role}</div></div>
+      <button onclick="logout()" style="margin-left:auto;background:rgba(212,88,88,.15);border:1px solid rgba(212,88,88,.3);color:var(--red);font-size:11px;font-weight:700;padding:7px 14px;border-radius:var(--rs);cursor:pointer;font-family:inherit">Toka</button>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">📋 Sasisha Taarifa</div></div>
+      <div style="padding:20px">
+        <div class="form-grid">
+          <div class="form-grp"><label class="form-lbl">Jina la Kwanza *</label><input class="form-inp" id="r-fn" value="${me.first_name}"></div>
+          <div class="form-grp"><label class="form-lbl">Jina la Familia *</label><input class="form-inp" id="r-ln" value="${me.last_name}"></div>
+        </div>
+        <div class="form-grid">
+          <div class="form-grp"><label class="form-lbl">Namba ya Simu</label><input class="form-inp" value="${me.phone}" disabled style="opacity:.6"></div>
+          <div class="form-grp"><label class="form-lbl">Njia ya Malipo</label>
+            <select class="form-sel" id="r-pay">${['M-Pesa','Tigo Pesa','Airtel Money'].map(p=>`<option ${fp&&fp.payment_method===p?'selected':''}>${p}</option>`).join('')}</select>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-grp"><label class="form-lbl">Mkoa</label>
+            <select class="form-sel" id="r-rg">${['Arusha','Dar es Salaam','Mwanza','Zanzibar','Mtwara','Dodoma','Morogoro','Tanga','Kilimanjaro','Singida','Mbeya','Iringa','Njombe','Lindi'].map(r=>`<option ${me.region===r?'selected':''}>${r}</option>`).join('')}</select>
+          </div>
+          <div class="form-grp"><label class="form-lbl">Ukubwa wa Shamba (Hekta)</label><input class="form-inp" id="r-hk" type="number" step="0.1" min="0" value="${fp?fp.farm_size:''}"></div>
+        </div>
+        <div class="form-grid one">
+          <div class="form-grp"><label class="form-lbl">Mazao Unayolima</label><input class="form-inp" id="r-cr" value="${fp?fp.crops:''}" placeholder="Mfano: Avokado, Ufuta, Mchele"></div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:8px">
+          <button class="btn btn-g" style="padding:13px 32px;font-size:14px" onclick="submitProfileUpdate()">✓ Sasisha Taarifa</button>
+        </div>
+      </div>
+    </div></div>`;
+  }
+
+  return `<div style="max-width:460px;margin:0 auto">
+  <div class="card">
+    <div class="card-head" style="justify-content:center;gap:0;padding:0">
+      <button onclick="authMode='login';go('account')" style="flex:1;padding:14px;background:${authMode==='login'?'rgba(90,158,82,.12)':'transparent'};border:none;border-bottom:2px solid ${authMode==='login'?'var(--green)':'transparent'};color:${authMode==='login'?'var(--glow)':'var(--muted)'};font-weight:700;font-size:12px;cursor:pointer;font-family:inherit">Ingia</button>
+      <button onclick="authMode='register';go('account')" style="flex:1;padding:14px;background:${authMode==='register'?'rgba(90,158,82,.12)':'transparent'};border:none;border-bottom:2px solid ${authMode==='register'?'var(--green)':'transparent'};color:${authMode==='register'?'var(--glow)':'var(--muted)'};font-weight:700;font-size:12px;cursor:pointer;font-family:inherit">Jiandikishe Mpya</button>
+    </div>
+    <div style="padding:20px">
+      ${authMode==='login'?`
+        <div class="form-grid one">
+          <div class="form-grp"><label class="form-lbl">Namba ya Simu *</label><input class="form-inp" id="l-ph" placeholder="+255 7XX XXX XXX"></div>
+          <div class="form-grp"><label class="form-lbl">Password *</label><input class="form-inp" id="l-pw" type="password" placeholder="Nenosiri lako"></div>
+        </div>
+        <button class="btn btn-g" style="width:100%;padding:13px;font-size:14px;margin-top:8px" onclick="submitLogin()">Ingia →</button>
+      `:`
+        <div class="form-grid">
+          <div class="form-grp"><label class="form-lbl">Jina la Kwanza *</label><input class="form-inp" id="r-fn" placeholder="Jina la kwanza"></div>
+          <div class="form-grp"><label class="form-lbl">Jina la Familia *</label><input class="form-inp" id="r-ln" placeholder="Jina la familia"></div>
+        </div>
+        <div class="form-grid">
+          <div class="form-grp"><label class="form-lbl">Namba ya Simu *</label><input class="form-inp" id="r-ph" placeholder="+255 7XX XXX XXX"></div>
+          <div class="form-grp"><label class="form-lbl">Password *</label><input class="form-inp" id="r-pw" type="password" placeholder="Herufi 6 au zaidi"></div>
+        </div>
+        <div class="form-grid">
+          <div class="form-grp"><label class="form-lbl">Njia ya Malipo</label>
+            <select class="form-sel" id="r-pay">${['M-Pesa','Tigo Pesa','Airtel Money'].map(p=>`<option>${p}</option>`).join('')}</select>
+          </div>
+          <div class="form-grp"><label class="form-lbl">Mkoa *</label>
+            <select class="form-sel" id="r-rg"><option value="">Chagua mkoa...</option>${['Arusha','Dar es Salaam','Mwanza','Zanzibar','Mtwara','Dodoma','Morogoro','Tanga','Kilimanjaro','Singida','Mbeya','Iringa','Njombe','Lindi'].map(r=>`<option>${r}</option>`).join('')}</select>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-grp"><label class="form-lbl">Ukubwa wa Shamba (Hekta)</label><input class="form-inp" id="r-hk" type="number" step="0.1" min="0" placeholder="2.5"></div>
+          <div class="form-grp"><label class="form-lbl">Mazao Unayolima *</label><input class="form-inp" id="r-cr" placeholder="Avokado, Ufuta..."></div>
+        </div>
+        <button class="btn btn-g" style="width:100%;padding:13px;font-size:14px;margin-top:8px" onclick="submitRegister()">✓ Jiandikishe Sasa</button>
+      `}
+    </div>
+  </div></div>`;
+}
+
+async function submitLogin(){
+  const phone=document.getElementById('l-ph').value.trim();
+  const password=document.getElementById('l-pw').value;
+  if(!phone||!password){ toast('Jaza namba ya simu na password','err'); return; }
+  try{
+    const data=await api('/auth/login',{method:'POST',body:JSON.stringify({phone,password})});
+    authToken=data.access_token; localStorage.setItem('kilimo_token',authToken); me=data.user;
+    toast('Karibu tena, '+me.first_name+'! 🌱'); go('home');
+  }catch(e){ toast(e.message,'err'); }
+}
+
+async function submitRegister(){
+  const first_name=document.getElementById('r-fn').value.trim();
+  const last_name=document.getElementById('r-ln').value.trim();
+  const phone=document.getElementById('r-ph').value.trim();
+  const password=document.getElementById('r-pw').value;
+  const payment_method=document.getElementById('r-pay').value;
+  const region=document.getElementById('r-rg').value;
+  const farm_size=parseFloat(document.getElementById('r-hk').value)||0;
+  const crops=document.getElementById('r-cr').value.trim();
+  if(!first_name||!last_name||!phone||!password||!region||!crops){ toast('Jaza sehemu zote zinazohitajika *','err'); return; }
+  try{
+    const data=await api('/auth/register',{method:'POST',body:JSON.stringify({
+      first_name,last_name,phone,password,role:'mkulima',region,farm_size,crops,payment_method
+    })});
+    authToken=data.access_token; localStorage.setItem('kilimo_token',authToken); me=data.user;
+    toast('Karibu Kilimo Hub, '+first_name+'! 🌱'); go('home');
+  }catch(e){ toast(e.message,'err'); }
+}
+
+async function submitProfileUpdate(){
+  const body={
+    first_name:document.getElementById('r-fn').value.trim(),
+    last_name:document.getElementById('r-ln').value.trim(),
+    payment_method:document.getElementById('r-pay').value,
+    region:document.getElementById('r-rg').value,
+    farm_size:parseFloat(document.getElementById('r-hk').value)||0,
+    crops:document.getElementById('r-cr').value.trim(),
+  };
+  try{
+    me=await api('/users/me/update',{method:'PUT',body:JSON.stringify(body)});
+    toast('Taarifa zimesasishwa ✓'); updateUserBox();
+  }catch(e){ toast(e.message,'err'); }
+}
+
+function logout(){ authToken=null; me=null; localStorage.removeItem('kilimo_token'); toast('Umetoka kwenye akaunti yako','info'); go('account'); }
+
+/* ═══ GROUPS ═══ */
+async function renderGroups(){
+  const active=await api('/groups/?status=Hai');
+  if(!active.length) return `<div class="card"><div class="card-head"><div class="card-title">🤝 Vikundi Vinavyopatikana</div></div><div class="empty"><div class="empty-ico">🤝</div><div class="empty-t">Hakuna vikundi sasa hivi</div><div class="empty-s">Admin ataunda vikundi vipya hivi karibuni. Rudi baadaye.</div></div></div>`;
+  return `<div class="card"><div class="card-head"><div class="card-title">🤝 Vikundi Vinavyopatikana (${active.length})</div></div>
+  <div style="padding:8px 12px">
+    ${active.map(g=>{
+      const pct=Math.round((g.current_members/g.target_members)*100);
+      return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+          <div><div style="font-family:var(--font-h);font-size:17px;font-weight:700">${g.emoji||'🌾'} ${g.product}</div><div style="font-size:11px;color:var(--muted);margin-top:3px">📍 ${g.region} · ${g.grade}</div></div>
+          <div style="text-align:right">
+            <div style="font-size:10px;color:var(--muted);text-decoration:line-through">TZS ${Math.round(g.retail_price).toLocaleString()}</div>
+            <div style="font-family:var(--font-h);font-size:20px;font-weight:900;color:var(--green)">TZS ${Math.round(g.group_price).toLocaleString()}</div>
+            <div style="background:rgba(90,158,82,.15);border:1px solid rgba(90,158,82,.3);color:var(--glow);font-size:9px;font-weight:800;padding:2px 8px;border-radius:20px;display:inline-block;margin-top:3px">OKOA ${g.savings_pct}%</div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:6px">
+          <span>Wanachama: <strong style="color:var(--text)">${g.current_members}/${g.target_members}</strong></span>
+          <span style="color:var(--gold)">⏱ ${g.deadline}</span>
+        </div>
+        <div class="prog-bg"><div class="prog-fill" style="width:${pct}%"><div class="prog-dot"></div></div></div>
+        <button data-gid="${g.id}" style="width:100%;margin-top:12px;background:linear-gradient(135deg,var(--green2),var(--green));color:#fff;border:none;border-radius:var(--rs);padding:12px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">
+          📲 Jiunge na Kikundi Hiki
+        </button>
+      </div>`;
+    }).join('')}
+  </div></div>`;
+}
+
+/* ═══ LOGISTICS ═══ */
+async function renderLogistics(){
+  const avail=await api('/logistics/?status=Inasubiri');
+  return `<div class="card">
+    <div style="background:linear-gradient(135deg,#050d14,#080f18);margin:0;height:170px;position:relative;overflow:hidden;border-bottom:1px solid var(--border)">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(88,152,200,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(88,152,200,.04) 1px,transparent 1px);background-size:20px 20px"></div>
+      <div style="position:absolute;top:40%;left:18%;right:30%;height:1.5px;background:linear-gradient(90deg,rgba(90,158,82,.5),rgba(88,152,200,.5));border-radius:2px;transform:rotate(18deg)"></div>
+      <div style="position:absolute;top:30%;left:58%;font-size:16px;transform:translate(-50%,-100%);cursor:default">📍</div>
+      <div style="position:absolute;top:58%;left:72%;font-size:16px;transform:translate(-50%,-100%);cursor:default">🏙️</div>
+      <div style="position:absolute;top:22%;left:17%;font-size:16px;transform:translate(-50%,-100%);cursor:default">📍</div>
+      <div style="position:absolute;bottom:10px;right:12px;font-size:9px;color:rgba(255,255,255,.25)">Tanzania 🇹🇿</div>
+    </div>
+    <div class="card-head"><div class="card-title">🚛 Safari Zinazopatikana (${avail.length})</div></div>
+    <div style="padding:8px 12px">
+      ${!avail.length?`<div class="empty"><div class="empty-ico">🚛</div><div class="empty-t">Hakuna safari sasa hivi</div><div class="empty-s">Admin atasajili safari mpya hivi karibuni</div></div>`:
+        avail.map(l=>`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:14px;margin-bottom:8px;display:flex;gap:12px;align-items:center">
+          <div style="width:44px;height:44px;background:rgba(88,152,200,.14);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0">🚛</div>
+          <div style="flex:1"><div style="font-weight:700;font-size:13px">${l.truck_number||'—'}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${l.origin} → ${l.destination}</div><div style="font-size:10px;color:var(--sky);margin-top:2px">Tani ${l.capacity_tons} · ETA: ${l.eta||'—'}</div></div>
+          <button data-lid="${l.id}" style="background:linear-gradient(135deg,#1a5080,var(--sky));color:#fff;border:none;border-radius:var(--rs);padding:9px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Hifadhi ›</button>
+        </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+/* ═══ MARKET ═══ */
+async function renderMarket(){
+  const markets=await api('/markets/');
+  return `<div class="card"><div class="card-head"><div class="card-title">📊 Bei za Soko — Tanzania Sasa Hivi</div></div>
+  <table><thead><tr><th>Zao</th><th>Daraja</th><th>Bei (TZS/kg)</th><th>Mabadiliko</th><th>Soko Kuu</th><th>Export</th></tr></thead>
+  <tbody>${markets.map(m=>`<tr>
+    <td style="font-weight:700">${m.crop}</td>
+    <td><span class="badge a">${m.grade}</span></td>
+    <td style="font-family:var(--font-h);font-size:15px;font-weight:700">${Math.round(m.price_tzs).toLocaleString()}</td>
+    <td style="color:${m.trending_up?'var(--green)':'var(--red)'};font-weight:700">${m.trending_up?'↑':'↓'} ${Math.abs(m.change_pct)}%</td>
+    <td>📍 ${m.market_name}</td>
+    <td style="color:var(--gold)">${m.export_price}</td>
+  </tr>`).join('')}</tbody></table></div>`;
+}
+
+/* ═══ CREDIT ═══ */
+async function renderCredit(){
+  const score=me&&me.farmer_profile?me.farmer_profile.trust_score:0;
+  const tier=me&&me.farmer_profile?me.farmer_profile.tier:null;
+  const pct=score/10;
+  const myLoans=me?await api('/loans/'):[];
+  return `<div style="max-width:580px;margin:0 auto">
+  <div class="card" style="text-align:center;padding:28px 20px;margin-bottom:16px">
+    <div style="font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">Alama Yako ya Uaminifu</div>
+    <div class="score-ring" style="margin:0 auto 16px">
+      <svg width="120" height="120" viewBox="0 0 120 120">
+        <defs><linearGradient id="sg"><stop offset="0%" stop-color="${score>700?'#3d7a35':'#c07828'}"/><stop offset="100%" stop-color="${score>700?'#7cc874':'#d4943a'}"/></linearGradient></defs>
+        <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="10"/>
+        <circle cx="60" cy="60" r="50" fill="none" stroke="url(#sg)" stroke-width="10" stroke-dasharray="314" stroke-dashoffset="${314-(314*pct/100)}" stroke-linecap="round"/>
+      </svg>
+      <div class="ring-val">
+        <div style="font-family:var(--font-h);font-size:32px;font-weight:900">${score}</div>
+        <div style="font-size:10px;color:var(--muted)">/1000</div>
+      </div>
+    </div>
+    ${me
+      ?`<div style="display:inline-block;background:linear-gradient(135deg,${score>700?'var(--green2)':'var(--amber)'},${score>700?'var(--green)':'var(--gold)'});color:#fff;font-size:10px;font-weight:800;padding:6px 18px;border-radius:20px;letter-spacing:1px">${tier==='Dhahabu'?'⭐ DHAHABU':tier==='Fedha'?'🥈 FEDHA':'🥉 SHABA'}</div>
+       <div style="font-size:12px;color:var(--muted);margin-top:10px">Umestahili mkopo wa hadi TZS ${(score>700?2400000:score>600?1200000:500000).toLocaleString()}</div>`
+      :`<div style="color:var(--muted);font-size:13px;margin-bottom:14px">Ingia kwanza kupata alama yako ya uaminifu</div>
+       <button class="btn btn-g" onclick="go('account')">Ingia / Jiandikishe →</button>`}
+  </div>
+  ${me?`<div class="card"><div class="card-head"><div class="card-title">🏦 Mikopo Inayopatikana Kwako</div></div>
+  <div style="padding:8px 12px">
+    ${[{bank:'CRDB Bank',amt:score>700?1200000:400000,rate:'8%'},{bank:'NMB Bank',amt:score>700?2400000:800000,rate:'10%'},{bank:'Equity Bank',amt:score>700?800000:300000,rate:'6%'},{bank:'M-Pesa Benki',amt:score>700?500000:200000,rate:'5%'}].map(l=>
+    `<div style="display:flex;justify-content:space-between;align-items:center;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);margin-bottom:8px">
+      <div><div style="font-weight:700;font-size:13px">🏦 ${l.bank}</div><div style="font-size:10px;color:var(--muted);margin-top:2px">Riba ${l.rate}/mwaka</div></div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="font-family:var(--font-h);font-size:15px;color:var(--green);font-weight:700">TZS ${l.amt.toLocaleString()}</div>
+        <button data-bank="${l.bank}" data-amt="${l.amt}" data-rate="${l.rate}" style="background:linear-gradient(135deg,var(--green2),var(--green));color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Omba</button>
+      </div>
+    </div>`).join('')}
+  </div></div>
+  ${myLoans.length?`<div class="card" style="margin-top:16px"><div class="card-head"><div class="card-title">📋 Maombi Yako ya Mikopo</div></div>
+  <div style="padding:8px 12px">
+    ${myLoans.map(l=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 4px;border-bottom:1px solid var(--border2)">
+      <div><div style="font-size:12.5px;font-weight:700">${l.bank_name}</div><div style="font-size:10px;color:var(--muted)">TZS ${Math.round(l.amount).toLocaleString()}</div></div>
+      <span class="badge ${l.status==='Imeidhinishwa'?'g':l.status==='Imekataliwa'?'b':'a'}">${l.status}</span>
+    </div>`).join('')}
+  </div></div>`:''}
+  `:''}
+  </div>`;
+}
+
+function attachEvents(p){
+  if(p==='groups'){
+    document.querySelectorAll('[data-gid]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        if(!requireLogin()) return;
+        try{ const r=await api('/groups/'+btn.dataset.gid+'/join',{method:'POST'}); toast(r.message); go('groups'); }
+        catch(e){ toast(e.message,'err'); }
+      });
+    });
+  }
+  if(p==='logistics'){
+    document.querySelectorAll('[data-lid]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        if(!requireLogin()) return;
+        try{ const r=await api('/logistics/'+btn.dataset.lid+'/book',{method:'POST'}); toast(r.message); go('logistics'); }
+        catch(e){ toast(e.message,'err'); }
+      });
+    });
+  }
+  if(p==='credit'){
+    document.querySelectorAll('[data-bank]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        if(!requireLogin()) return;
+        try{
+          await api('/loans/',{method:'POST',body:JSON.stringify({
+            bank_name:btn.dataset.bank, amount:parseInt(btn.dataset.amt,10), interest_rate:btn.dataset.rate, purpose:'Kilimo'
+          })});
+          toast(`✓ Ombi la mkopo la ${btn.dataset.bank} limetumwa!`); go('credit');
+        }catch(e){ toast(e.message,'err'); }
+      });
+    });
+  }
+}
+
+/* ═══ SPLASH ═══ */
+(async function boot(){
+  await refreshMe();
+  setTimeout(()=>{
+    const w=document.getElementById('welcome');
+    w.style.transition='opacity .5s'; w.style.opacity='0';
+    setTimeout(()=>{ w.style.display='none'; document.getElementById('root').style.display='flex'; go('home'); },500);
+  },1400);
+})();
+</script>
+</body>
+</html>
