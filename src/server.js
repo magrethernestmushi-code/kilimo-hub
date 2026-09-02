@@ -35,7 +35,7 @@ app.use('/loans', require('./routes/loans'));
 app.use('/alerts', require('./routes/alerts'));
 app.use('/admin', require('./routes/admin'));
 
-app.get('/', (req, res) => {
+app.get('/api/status', (req, res) => {
   res.json({
     app: process.env.APP_NAME || 'Digital Kilimo Hub',
     version: '1.0.0',
@@ -46,6 +46,7 @@ app.get('/', (req, res) => {
 app.get('/health', (req, res) => res.json({ status: 'healthy' }));
 
 // ── Static frontend (website / app / admin) ──
+// index.html (website), app.html (farmer app), admin.html (admin dashboard)
 const publicDir = path.join(__dirname, '..', 'public');
 app.use(express.static(publicDir));
 
