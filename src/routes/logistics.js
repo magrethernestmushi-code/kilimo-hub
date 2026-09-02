@@ -93,4 +93,16 @@ router.delete('/:id', requireAuth, requireRole('admin'), async (req, res, next) 
   } catch (err) { next(err); }
 });
 
+// GET /logistics/mine — trips created by or assigned to the logged-in driver
+router.get('/mine/list', requireAuth, requireRole('dereva', 'admin'), async (req, res, next) => {
+  try {
+    const { rows: driverRows } = await pool.query('SELECT id FROM driver_profiles WHERE user_id = $1', [req.user.id]);
+    if (!driverRows[0]) return res.json([]);
+    const { rows } = await pool.query(
+      'SELECT * FROM logistics_trips WHERE driver_id = $1 ORDER BY created_at DESC', [driverRows[0].id]
+    );
+    res.json(rows);
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
