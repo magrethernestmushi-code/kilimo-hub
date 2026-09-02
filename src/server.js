@@ -30,6 +30,7 @@ app.use('/users', require('./routes/users'));
 app.use('/groups', require('./routes/groups'));
 app.use('/logistics', require('./routes/logistics'));
 app.use('/markets', require('./routes/markets'));
+app.use('/products', require('./routes/products'));
 app.use('/loans', require('./routes/loans'));
 app.use('/alerts', require('./routes/alerts'));
 app.use('/admin', require('./routes/admin'));

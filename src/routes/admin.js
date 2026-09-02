@@ -101,4 +101,19 @@ router.post('/seed-markets', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// GET /admin/weekly-activity — real transaction counts for the last 4 weeks (no fabricated numbers)
+router.get('/weekly-activity', async (req, res, next) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT to_char(week_start, 'DD Mon') AS label, count::int AS count FROM (
+        SELECT date_trunc('week', now()) - (n || ' weeks')::interval AS week_start,
+               (SELECT count(*) FROM transactions
+                WHERE created_at >= date_trunc('week', now()) - (n || ' weeks')::interval
+                  AND created_at <  date_trunc('week', now()) - ((n-1) || ' weeks')::interval) AS count
+        FROM generate_series(3, 0, -1) AS n
+      ) t ORDER BY week_start`);
+    res.json(rows);
+  } catch (err) { next(err); }
+});
+
 module.exports = router;

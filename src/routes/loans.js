@@ -22,22 +22,30 @@ router.get('/', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// POST /loans — apply for a loan; trust score is snapshotted server-side from the farmer's real record
+// POST /loans — apply for a loan; trust score is snapshotted server-side from the farmer's real record.
+// Admins may create a loan on behalf of a specific farmer by passing user_id.
 router.post('/', async (req, res, next) => {
   try {
-    const { bank_name, amount, interest_rate, purpose } = req.body;
+    const { bank_name, amount, interest_rate, purpose, user_id } = req.body;
     if (!bank_name) return res.status(422).json({ detail: 'Jina la benki linahitajika' });
     if (!(amount > 0)) return res.status(422).json({ detail: 'Kiasi cha mkopo lazima kiwe zaidi ya 0' });
 
+    let targetUserId = req.user.id;
+    if (user_id && req.user.role === 'admin') {
+      const { rows: targetRows } = await pool.query(`SELECT id FROM users WHERE id = $1 AND role = 'mkulima'`, [user_id]);
+      if (!targetRows[0]) return res.status(404).json({ detail: 'Mkulima huyo hajapatikana' });
+      targetUserId = user_id;
+    }
+
     let score = 500;
-    const { rows: farmerRows } = await pool.query('SELECT trust_score FROM farmer_profiles WHERE user_id = $1', [req.user.id]);
+    const { rows: farmerRows } = await pool.query('SELECT trust_score FROM farmer_profiles WHERE user_id = $1', [targetUserId]);
     if (farmerRows[0]) score = farmerRows[0].trust_score;
 
     const id = crypto.randomUUID();
     const { rows } = await pool.query(
       `INSERT INTO loans (id, user_id, bank_name, amount, interest_rate, purpose, trust_score, status)
        VALUES ($1,$2,$3,$4,$5,$6,$7,'Inasubiri') RETURNING *`,
-      [id, req.user.id, bank_name, amount, interest_rate || '8%', purpose || 'Kilimo', score]
+      [id, targetUserId, bank_name, amount, interest_rate || '8%', purpose || 'Kilimo', score]
     );
     res.status(201).json(rows[0]);
   } catch (err) { next(err); }

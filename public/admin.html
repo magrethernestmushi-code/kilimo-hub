@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Kilimo Hub · Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0c0f0a;--surface:#141710;--card:#1c2018;--border:#2a3024;--border2:#1e2419;
+  --green:#5a9e52;--green2:#3d7a35;--glow:#7cc874;--gold:#d4943a;--amber:#c07828;
+  --sky:#5898c8;--red:#d45858;--purple:#9b72cf;--text:#e8ede4;--muted:#6a7a62;--dim:#3a4a34;
+  --font-h:'Fraunces',Georgia,serif; --font-b:'Plus Jakarta Sans',system-ui,sans-serif;
+  --r:16px; --rs:10px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:var(--font-b);color:var(--text);}
+
+/* ═══ LOGIN SCREEN ═══ */
+#login-screen{
+  position:fixed;inset:0;background:var(--bg);z-index:900;
+  display:flex;align-items:center;justify-content:center;
+}
+#login-screen::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 30% 40%,rgba(90,158,82,.09),transparent 60%),
+             radial-gradient(ellipse at 70% 60%,rgba(155,114,207,.07),transparent 55%);
+  pointer-events:none;
+}
+/* Animated background particles */
+.bg-grain{position:absolute;inset:0;opacity:.03;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:200px;pointer-events:none;}
+.login-box{
+  width:420px;max-width:92vw;position:relative;z-index:1;
+  animation:loginDrop .7s cubic-bezier(.34,1.36,.64,1) both;
+}
+@keyframes loginDrop{from{opacity:0;transform:translateY(30px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+.login-header{text-align:center;margin-bottom:32px;}
+.login-logo{width:64px;height:64px;background:linear-gradient(135deg,var(--green2),var(--green));border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 16px;box-shadow:0 12px 36px rgba(90,158,82,.4);}
+.login-title{font-family:var(--font-h);font-size:28px;font-weight:900;margin-bottom:4px;}
+.login-title span{color:var(--green);}
+.login-sub{font-size:12px;color:var(--muted);}
+.login-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(155,114,207,.12);border:1px solid rgba(155,114,207,.25);color:var(--purple);font-size:10px;font-weight:700;padding:5px 12px;border-radius:20px;margin-top:8px;letter-spacing:.5px;}
+.login-card{background:var(--card);border:1px solid var(--border);border-radius:22px;padding:30px;box-shadow:0 24px 64px rgba(0,0,0,.5);}
+.login-lbl{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:7px;display:block;}
+.login-inp{
+  width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);
+  font-size:15px;padding:14px 16px;border-radius:var(--rs);font-family:inherit;outline:none;
+  transition:all .2s;margin-bottom:16px;letter-spacing:1px;
+}
+.login-inp:focus{border-color:rgba(90,158,82,.6);background:rgba(90,158,82,.04);box-shadow:0 0 0 3px rgba(90,158,82,.1);}
+.login-inp.shake{animation:shake .4s ease;}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+.login-btn{
+  width:100%;background:linear-gradient(135deg,var(--green2),var(--green));color:#fff;border:none;
+  border-radius:var(--rs);padding:15px;font-family:inherit;font-size:15px;font-weight:700;
+  cursor:pointer;transition:all .2s;margin-top:4px;box-shadow:0 6px 20px rgba(90,158,82,.35);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.login-btn:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(90,158,82,.45);}
+.login-btn:active{transform:translateY(0);}
+.login-err{background:rgba(212,88,88,.12);border:1px solid rgba(212,88,88,.3);color:var(--red);font-size:12px;font-weight:600;padding:10px 14px;border-radius:var(--rs);margin-bottom:14px;display:none;align-items:center;gap:8px;}
+.login-err.on{display:flex;}
+.login-attempts{font-size:10px;color:var(--muted);text-align:center;margin-top:12px;}
+.login-attempts span{color:var(--gold);font-weight:700;}
+.pw-wrap{position:relative;}
+.pw-eye{position:absolute;right:14px;top:50%;transform:translateY(-70%);cursor:pointer;font-size:16px;color:var(--muted);transition:color .2s;}
+.pw-eye:hover{color:var(--text);}
+.login-footer{text-align:center;margin-top:20px;font-size:10px;color:var(--dim);}
+
+/* Locked state */
+#locked-screen{position:fixed;inset:0;background:rgba(0,0,0,.92);backdrop-filter:blur(8px);z-index:950;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;}
+#locked-screen.on{display:flex;}
+.lock-ico{font-size:56px;animation:lockBounce .6s ease;}
+@keyframes lockBounce{0%{transform:scale(1)}50%{transform:scale(1.2)}100%{transform:scale(1)}}
+.lock-title{font-family:var(--font-h);font-size:22px;font-weight:900;color:var(--red);}
+.lock-sub{font-size:13px;color:var(--muted);}
+.lock-timer{font-family:var(--font-h);font-size:36px;font-weight:900;color:var(--red);}
+
+/* ═══ MAIN APP ═══ */
+#app{display:none;width:100vw;height:100vh;display:none;flex-direction:row;}
+#app.on{display:flex;}
+
+/* SIDEBAR */
+.sidebar{width:230px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:relative;}
+.sidebar::before{content:'';position:absolute;top:0;left:0;right:0;height:160px;background:radial-gradient(ellipse at 50% 0%,rgba(90,158,82,.12),transparent 70%);pointer-events:none;}
+.sb-logo{padding:22px 18px 18px;border-bottom:1px solid var(--border);position:relative;z-index:1;}
+.sb-mark{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--green2),var(--green));display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:10px;box-shadow:0 5px 16px rgba(90,158,82,.35);}
+.sb-name{font-family:var(--font-h);font-size:14px;font-weight:900;}
+.sb-sub{font-size:8.5px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:3px;}
+.sb-admin-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(155,114,207,.14);border:1px solid rgba(155,114,207,.28);color:var(--purple);font-size:9px;font-weight:700;padding:4px 10px;border-radius:20px;margin-top:6px;letter-spacing:.5px;}
+.sb-nav{flex:1;padding:10px;overflow-y:auto;}
+.sb-sec{font-size:9px;font-weight:700;color:var(--dim);letter-spacing:2px;text-transform:uppercase;padding:12px 8px 6px;}
+.sb-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--rs);cursor:pointer;font-size:12px;font-weight:500;color:var(--muted);transition:all .18s;margin-bottom:1px;position:relative;}
+.sb-item:hover{background:rgba(90,158,82,.08);color:var(--text);}
+.sb-item.on{background:rgba(90,158,82,.15);color:var(--glow);font-weight:700;}
+.sb-item.on::before{content:'';position:absolute;left:0;top:20%;height:60%;width:3px;background:var(--green);border-radius:0 3px 3px 0;}
+.sb-ico{font-size:15px;width:20px;text-align:center;flex-shrink:0;}
+.sb-badge{margin-left:auto;font-size:9px;font-weight:800;padding:2px 7px;border-radius:20px;background:var(--red);color:#fff;}
+.sb-badge.g{background:var(--green);}
+.sb-bottom{padding:14px;border-top:1px solid var(--border);}
+.admin-info{background:var(--card);border:1px solid var(--border);border-radius:var(--rs);padding:12px 14px;display:flex;align-items:center;gap:10px;}
+.admin-av{width:34px;height:34px;background:linear-gradient(135deg,#4a2878,var(--purple));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.admin-name{font-size:12px;font-weight:700;color:var(--text);}
+.admin-role{font-size:9px;color:var(--purple);}
+.logout-btn{margin-top:8px;width:100%;background:rgba(212,88,88,.1);border:1px solid rgba(212,88,88,.2);color:var(--red);font-size:11px;font-weight:700;padding:8px;border-radius:var(--rs);cursor:pointer;font-family:inherit;transition:all .2s;}
+.logout-btn:hover{background:rgba(212,88,88,.18);}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{padding:15px 26px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;position:relative;}
+.topbar::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% -60%,rgba(90,158,82,.05),transparent 60%);pointer-events:none;}
+.tb-l{position:relative;z-index:1;}
+.tb-title{font-family:var(--font-h);font-size:19px;font-weight:900;}
+.tb-sub{font-size:11px;color:var(--muted);margin-top:3px;}
+.tb-r{position:relative;z-index:1;display:flex;gap:10px;align-items:center;}
+.tb-time{font-size:11px;font-weight:700;color:var(--muted);background:var(--card);border:1px solid var(--border);padding:7px 14px;border-radius:var(--rs);font-family:var(--font-h);}
+.btn{font-size:11px;font-weight:700;padding:8px 16px;border-radius:var(--rs);cursor:pointer;font-family:inherit;border:none;transition:all .2s;}
+.btn-g{background:linear-gradient(135deg,var(--green2),var(--green));color:#fff;box-shadow:0 4px 12px rgba(90,158,82,.3);}
+.btn-g:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(90,158,82,.4);}
+.btn-o{background:rgba(212,148,58,.12);border:1px solid rgba(212,148,58,.3);color:var(--gold);}
+.content{flex:1;overflow-y:auto;padding:22px 26px;}
+.content::-webkit-scrollbar{width:5px;}
+.content::-webkit-scrollbar-thumb{background:var(--border);border-radius:5px;}
+
+/* STAT GRID */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-bottom:20px;}
+.sc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;position:relative;overflow:hidden;cursor:pointer;transition:all .2s;}
+.sc:hover{border-color:rgba(90,158,82,.3);transform:translateY(-2px);}
+.sc::before{content:'';position:absolute;top:-25px;right:-25px;width:80px;height:80px;border-radius:50%;opacity:.06;}
+.sc.g::before{background:var(--green);}
+.sc.a::before{background:var(--gold);}
+.sc.b::before{background:var(--sky);}
+.sc.r::before{background:var(--red);}
+.sc-ico{position:absolute;top:16px;right:16px;font-size:20px;opacity:.55;}
+.sc-lbl{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;}
+.sc-val{font-family:var(--font-h);font-size:26px;font-weight:900;line-height:1;}
+.sc-val.g{color:var(--green);}
+.sc-val.a{color:var(--gold);}
+.sc-val.b{color:var(--sky);}
+.sc-val.r{color:var(--red);}
+.sc-sub{font-size:10px;margin-top:6px;color:var(--muted);}
+.sc-sub.up{color:var(--green);}
+
+/* TABLE CARD */
+.tcard{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:18px;}
+.tc-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.tc-title{font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.tc-cnt{font-size:11px;background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:3px 9px;border-radius:20px;font-weight:600;}
+.tc-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.si{background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:12px;padding:8px 13px;border-radius:var(--rs);font-family:inherit;outline:none;width:200px;transition:border-color .2s;}
+.si:focus{border-color:rgba(90,158,82,.45);}
+.fs{background:var(--surface);border:1px solid var(--border);color:var(--muted);font-size:12px;padding:8px 11px;border-radius:var(--rs);font-family:inherit;outline:none;cursor:pointer;}
+table{width:100%;border-collapse:collapse;}
+th{padding:10px 15px;text-align:left;font-size:9px;font-weight:700;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;border-bottom:1px solid var(--border);background:rgba(255,255,255,.01);}
+td{padding:12px 15px;font-size:12px;border-bottom:1px solid var(--border2);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(90,158,82,.025);}
+.badge{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;}
+.badge.g{background:rgba(90,158,82,.15);border:1px solid rgba(90,158,82,.3);color:var(--glow);}
+.badge.a{background:rgba(212,148,58,.15);border:1px solid rgba(212,148,58,.3);color:var(--gold);}
+.badge.b{background:rgba(88,152,200,.15);border:1px solid rgba(88,152,200,.3);color:var(--sky);}
+.badge.r{background:rgba(212,88,88,.15);border:1px solid rgba(212,88,88,.3);color:var(--red);}
+.badge.p{background:rgba(155,114,207,.15);border:1px solid rgba(155,114,207,.3);color:var(--purple);}
+.abtns{display:flex;gap:5px;}
+.ab{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--muted);font-size:10px;font-weight:700;padding:5px 10px;border-radius:7px;cursor:pointer;font-family:inherit;transition:all .18s;}
+.ab:hover{background:rgba(90,158,82,.12);border-color:rgba(90,158,82,.3);color:var(--green);}
+.ab.del:hover{background:rgba(212,88,88,.12);border-color:rgba(212,88,88,.3);color:var(--red);}
+.ab.approve:hover{background:rgba(90,158,82,.2);color:var(--green);}
+
+/* GRID */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;}
+.grid31{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:18px;}
+.cc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;}
+.ct{font-size:13px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;}
+
+/* BAR CHART */
+.bar-ch{display:flex;align-items:flex-end;gap:10px;height:120px;}
+.bc{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;}
+.bc-bar{width:100%;border-radius:6px 6px 0 0;min-height:4px;cursor:pointer;transition:opacity .2s;}
+.bc-bar:hover{opacity:.8;}
+.bc-v{font-size:9px;color:var(--muted);font-weight:600;}
+.bc-l{font-size:8.5px;color:var(--dim);font-weight:600;}
+
+/* ACTIVITY */
+.af{display:flex;flex-direction:column;}
+.ai{display:flex;gap:11px;padding:11px 18px;border-bottom:1px solid var(--border2);align-items:flex-start;}
+.ai:last-child{border-bottom:none;}
+.ad{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.ad.g{background:var(--green);box-shadow:0 0 5px rgba(90,158,82,.5);}
+.ad.a{background:var(--gold);}
+.ad.b{background:var(--sky);}
+.ad.r{background:var(--red);}
+.am{font-size:12px;line-height:1.4;}
+.at{font-size:10px;color:var(--dim);margin-top:2px;}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);z-index:800;display:none;align-items:center;justify-content:center;}
+.modal-bg.on{display:flex;}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:26px;width:500px;max-width:93vw;max-height:86vh;overflow-y:auto;position:relative;animation:mIn .25s ease both;}
+@keyframes mIn{from{opacity:0;transform:scale(.95) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal::-webkit-scrollbar{width:4px;}
+.modal::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+.mh{font-family:var(--font-h);font-size:19px;font-weight:900;margin-bottom:5px;}
+.ms{font-size:12px;color:var(--muted);margin-bottom:20px;}
+.mc{position:absolute;top:18px;right:18px;width:28px;height:28px;background:var(--surface);border:1px solid var(--border);border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--muted);transition:all .18s;}
+.mc:hover{background:rgba(212,88,88,.15);color:var(--red);}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.fg.one{grid-template-columns:1fr;}
+.fg2{display:flex;flex-direction:column;gap:6px;}
+.fl{font-size:9.5px;font-weight:700;color:var(--muted);letter-spacing:1.2px;text-transform:uppercase;}
+.fi{background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:13px;padding:10px 13px;border-radius:var(--rs);font-family:inherit;outline:none;transition:border-color .2s;}
+.fi:focus{border-color:rgba(90,158,82,.5);}
+.fsel{background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:13px;padding:10px 13px;border-radius:var(--rs);font-family:inherit;outline:none;cursor:pointer;width:100%;}
+.fta{background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:12px;padding:10px 13px;border-radius:var(--rs);font-family:inherit;outline:none;resize:vertical;min-height:80px;width:100%;transition:border-color .2s;}
+.fta:focus{border-color:rgba(90,158,82,.5);}
+.mbtns{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
+.mbtn{font-size:13px;font-weight:700;padding:10px 20px;border-radius:var(--rs);cursor:pointer;font-family:inherit;border:none;transition:all .2s;}
+.mbtn.g{background:linear-gradient(135deg,var(--green2),var(--green));color:#fff;box-shadow:0 4px 12px rgba(90,158,82,.3);}
+.mbtn.g:hover{transform:translateY(-1px);}
+.mbtn.c{background:rgba(255,255,255,.05);color:var(--muted);border:1px solid var(--border);}
+.detail-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border2);}
+.detail-row:last-child{border-bottom:none;}
+.dk{font-size:11px;color:var(--muted);font-weight:600;}
+.dv{font-size:12px;color:var(--text);font-weight:600;}
+.prog-bg{height:5px;background:var(--border);border-radius:5px;overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--green2),var(--glow));transition:width .6s;}
+
+/* MAP */
+.map-box{background:linear-gradient(135deg,#050d14,#080f18);border-radius:12px;height:200px;position:relative;overflow:hidden;border:1px solid rgba(88,152,200,.1);}
+.mg{position:absolute;inset:0;background-image:linear-gradient(rgba(88,152,200,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(88,152,200,.04) 1px,transparent 1px);background-size:20px 20px;}
+.mp{position:absolute;font-size:15px;transform:translate(-50%,-100%);cursor:pointer;transition:transform .2s;}
+.mp:hover{transform:translate(-50%,-100%) scale(1.3);}
+.mrl{position:absolute;background:linear-gradient(90deg,rgba(90,158,82,.45),rgba(88,152,200,.45));height:1.5px;border-radius:2px;}
+
+/* PAGE ANIM */
+.page{display:none;}
+.page.on{display:block;animation:fu .28s ease both;}
+@keyframes fu{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* PROGRESS */
+.prog-grp-bg{height:6px;background:var(--border);border-radius:6px;overflow:visible;position:relative;margin:6px 0;}
+.prog-grp-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--green2),var(--glow));transition:width .5s;position:relative;}
+
+/* TOAST */
+.toast-wrap{position:fixed;bottom:22px;right:22px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
+.ti{background:var(--card);border:1px solid rgba(90,158,82,.4);color:var(--glow);font-size:13px;font-weight:600;padding:11px 18px;border-radius:var(--r);box-shadow:0 8px 26px rgba(0,0,0,.5);animation:tin .3s ease both;display:flex;align-items:center;gap:8px;max-width:300px;}
+.ti.err{border-color:rgba(212,88,88,.4);color:var(--red);}
+.ti.info{border-color:rgba(88,152,200,.4);color:var(--sky);}
+.ti.warn{border-color:rgba(212,148,58,.4);color:var(--gold);}
+@keyframes tin{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:translateX(0)}}
+@keyframes tout{from{opacity:1}to{opacity:0;transform:translateX(14px)}}
+
+.empty{text-align:center;padding:48px 20px;}
+.ei{font-size:42px;margin-bottom:12px;opacity:.35;}
+.et{font-family:var(--font-h);font-size:16px;color:var(--muted);margin-bottom:5px;}
+.es{font-size:12px;color:var(--dim);}
+
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:5px;}
+</style>
+</head>
+<body>
+
+<!-- GRAIN -->
+<div class="bg-grain"></div>
+
+<!-- ═══ LOGIN SCREEN ═══ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-header">
+      <div class="login-logo">🌾</div>
+      <div class="login-title">Kilimo <span>Hub</span></div>
+      <div class="login-sub">Mfumo wa Usimamizi wa Kilimo · Tanzania 🇹🇿</div>
+      <div class="login-badge">🔐 Usalama wa Admin</div>
+    </div>
+    <div class="login-card">
+      <div class="login-err" id="login-err">✕ <span id="err-msg">Nenosiri si sahihi</span></div>
+      <label class="login-lbl" for="ph-input">📱 Namba ya Simu</label>
+      <input type="text" class="login-inp" id="ph-input" placeholder="+255 7XX XXX XXX" autocomplete="off" style="margin-bottom:14px" onkeydown="if(event.key==='Enter')doLogin()">
+      <label class="login-lbl" for="pw-input">🔑 Nenosiri la Admin</label>
+      <div class="pw-wrap">
+        <input type="password" class="login-inp" id="pw-input" placeholder="Weka nenosiri lako..." autocomplete="off" onkeydown="if(event.key==='Enter')doLogin()">
+        <div class="pw-eye" id="pw-eye" onclick="togglePw()">👁</div>
+      </div>
+      <button class="login-btn" id="login-btn" onclick="doLogin()">
+        <span>🔓 Ingia kama Admin</span>
+      </button>
+    </div>
+    <div class="login-footer">🔒 Ulinzi wa kweli wa seva · Nenosiri halijawahi kuhifadhiwa kwenye faili hii</div>
+  </div>
+</div>
+
+<!-- ═══ MAIN APP ═══ -->
+<div id="app">
+  <div class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-mark">🌾</div>
+      <div class="sb-name">Digital Kilimo Hub</div>
+      <div class="sb-sub">Admin Dashboard</div>
+      <div class="sb-admin-badge">⚙️ Admin Mkuu</div>
+    </div>
+    <div class="sb-nav" id="sb-nav"></div>
+    <div class="sb-bottom">
+      <div class="admin-info">
+        <div class="admin-av">👨🏿‍💼</div>
+        <div><div class="admin-name">Admin Mkuu</div><div class="admin-role">Kilimo Hub HQ</div></div>
+      </div>
+      <button class="logout-btn" onclick="doLogout()">🚪 Toka kwenye Mfumo</button>
+    </div>
+  </div>
+  <div class="main">
+    <div class="topbar">
+      <div class="tb-l">
+        <div class="tb-title" id="tb-title">📊 Muhtasari</div>
+        <div class="tb-sub" id="tb-sub">Data ya wakati halisi</div>
+      </div>
+      <div class="tb-r">
+        <div class="tb-time" id="clk">--:--:--</div>
+        <button class="btn btn-o" onclick="refreshData()">↻ Sasisha</button>
+        <button class="btn btn-g" id="add-btn" onclick="openAddModal()" style="display:none">＋ Ongeza</button>
+      </div>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-bg" id="modal-bg" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modal-box">
+    <div class="mc" onclick="closeModal()">✕</div>
+    <div id="modal-inner"></div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toasts"></div>
+
+<script>
+/* ═══ API ═══ (same-origin — this file is served by the API itself) */
+async function api(path, opts={}){
+  const headers={'Content-Type':'application/json', ...(opts.headers||{})};
+  if(authToken) headers['Authorization']='Bearer '+authToken;
+  const res=await fetch(path,{...opts,headers});
+  let data=null; try{ data=await res.json(); }catch(e){}
+  if(!res.ok){ const err=new Error((data&&data.detail)||'Hitilafu imetokea'); err.status=res.status; throw err; }
+  return data;
+}
+
+/* ═══ AUTH STATE ═══ */
+let authToken=localStorage.getItem('kilimo_admin_token')||null;
+let me=null;
+
+function togglePw(){
+  const inp=document.getElementById('pw-input');
+  const eye=document.getElementById('pw-eye');
+  if(inp.type==='password'){ inp.type='text'; eye.textContent='🙈'; } else { inp.type='password'; eye.textContent='👁'; }
+}
+function showLoginErr(msg){
+  const e=document.getElementById('login-err');
+  document.getElementById('err-msg').textContent=msg;
+  e.classList.add('on');
+  const inp=document.getElementById('pw-input');
+  inp.classList.add('shake'); setTimeout(()=>inp.classList.remove('shake'),400);
+}
+
+async function doLogin(){
+  const phone=document.getElementById('ph-input').value.trim();
+  const pw=document.getElementById('pw-input').value;
+  if(!phone||!pw){ showLoginErr('Weka namba ya simu na nenosiri'); return; }
+  try{
+    const data=await api('/auth/login',{method:'POST',body:JSON.stringify({phone,password:pw})});
+    if(data.user.role!=='admin'){ showLoginErr('Akaunti hii si ya Admin'); return; }
+    authToken=data.access_token; localStorage.setItem('kilimo_admin_token',authToken); me=data.user;
+    document.getElementById('login-screen').style.opacity='0';
+    document.getElementById('login-screen').style.transition='opacity .4s';
+    setTimeout(()=>{
+      document.getElementById('login-screen').style.display='none';
+      document.getElementById('app').classList.add('on');
+      document.querySelector('.admin-name').textContent=me.full_name;
+      buildNav(); navTo('overview'); toast('✓ Karibu, '+me.first_name+'!');
+    },400);
+  }catch(e){ showLoginErr(e.message); }
+}
+
+function doLogout(){
+  authToken=null; me=null; localStorage.removeItem('kilimo_admin_token');
+  document.getElementById('app').classList.remove('on');
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('login-screen').style.opacity='1';
+  document.getElementById('pw-input').value='';
+  document.getElementById('login-err').classList.remove('on');
+  toast('Umetoka kwenye mfumo salama','info');
+}
+
+/* Restore session if the token still works */
+(async function boot(){
+  if(!authToken) return;
+  try{
+    me=await api('/auth/me');
+    if(me.role!=='admin'){ authToken=null; localStorage.removeItem('kilimo_admin_token'); return; }
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app').classList.add('on');
+    document.querySelector('.admin-name').textContent=me.full_name;
+    buildNav(); navTo('overview');
+  }catch(e){ authToken=null; localStorage.removeItem('kilimo_admin_token'); }
+})();
+
+/* ═══ CLOCK ═══ */
+function tick(){ const n=new Date(),p=v=>String(v).padStart(2,'0'); document.getElementById('clk').textContent=p(n.getHours())+':'+p(n.getMinutes())+':'+p(n.getSeconds()); }
+tick(); setInterval(tick,1000);
+
+/* ═══ TOAST ═══ */
+function toast(msg,type='ok'){
+  const c=document.getElementById('toasts'),d=document.createElement('div');
+  d.className='ti'+(type==='err'?' err':type==='info'?' info':type==='warn'?' warn':'');
+  d.innerHTML=(type==='ok'?'✓':type==='err'?'✕':type==='warn'?'⚠':'ℹ')+' '+msg;
+  c.appendChild(d);
+  setTimeout(()=>{ d.style.animation='tout .3s ease both'; setTimeout(()=>d.remove(),300); },3200);
+}
+
+/* ═══ MODAL ═══ */
+function openModal(html){ document.getElementById('modal-inner').innerHTML=html; document.getElementById('modal-bg').classList.add('on'); }
+function closeModal(){ document.getElementById('modal-bg').classList.remove('on'); }
+
+async function refreshData(){ await navTo(curPage); toast('Data imesasishwa','info'); }
+
+/* ═══ NAV ═══ */
+const PAGES=[
+  {id:'overview',ico:'📊',lbl:'Muhtasari',sec:'Msingi'},
+  {id:'farmers',ico:'👩🏾‍🌾',lbl:'Wakulima',sec:null},
+  {id:'groups',ico:'🤝',lbl:'Vikundi',sec:null},
+  {id:'logistics',ico:'🚛',lbl:'Usafirishaji',sec:null},
+  {id:'products',ico:'🌾',lbl:'Bidhaa',sec:null},
+  {id:'transactions',ico:'💳',lbl:'Miamala',sec:'Fedha'},
+  {id:'loans',ico:'🏦',lbl:'Mikopo',sec:null},
+  {id:'alerts',ico:'⚠️',lbl:'Tahadhari',sec:'Akili'},
+  {id:'markets',ico:'📈',lbl:'Bei za Soko',sec:null},
+];
+let curPage='overview';
+let cache={ farmers:[], groups:[], logistics:[], products:[], loans:[], alerts:[] };
+
+async function buildNav(){
+  let pendLoans=0, alertCount=0;
+  try{ const loans=await api('/loans/'); pendLoans=loans.filter(l=>l.status==='Inasubiri').length; }catch(e){}
+  try{ const alerts=await api('/alerts/'); alertCount=alerts.length; }catch(e){}
+  let html='';
+  PAGES.forEach(p=>{
+    if(p.sec) html+=`<div class="sb-sec">${p.sec}</div>`;
+    const badge=p.id==='loans'&&pendLoans?`<span class="sb-badge">${pendLoans}</span>`:p.id==='alerts'&&alertCount?`<span class="sb-badge">${alertCount}</span>`:'';
+    html+=`<div class="sb-item ${p.id===curPage?'on':''}" onclick="navTo('${p.id}')"><span class="sb-ico">${p.ico}</span>${p.lbl}${badge}</div>`;
+  });
+  document.getElementById('sb-nav').innerHTML=html;
+}
+
+const ADD_BTNS={farmers:'＋ Mkulima',groups:'＋ Kikundi',logistics:'＋ Safari',products:'＋ Bidhaa',loans:'＋ Mkopo',alerts:'＋ Tahadhari'};
+const TITLES={overview:'📊 Muhtasari',farmers:'👩🏾‍🌾 Wakulima',groups:'🤝 Vikundi',logistics:'🚛 Usafirishaji',products:'🌾 Bidhaa',transactions:'💳 Miamala',loans:'🏦 Mikopo',alerts:'⚠️ Tahadhari',markets:'📈 Bei za Soko'};
+
+async function navTo(id){
+  curPage=id; buildNav();
+  const btn=document.getElementById('add-btn');
+  if(ADD_BTNS[curPage]){ btn.style.display=''; btn.textContent=ADD_BTNS[curPage]; } else btn.style.display='none';
+  document.getElementById('tb-title').textContent=TITLES[curPage]||'';
+  document.getElementById('content').innerHTML='<div class="empty"><div class="ei">🌾</div><div class="et">Inapakia...</div></div>';
+  const renders={overview:pgOverview,farmers:pgFarmers,groups:pgGroups,logistics:pgLogistics,products:pgProducts,transactions:pgTransactions,loans:pgLoans,alerts:pgAlerts,markets:pgMarkets};
+  const fn=renders[curPage];
+  if(fn){
+    try{ document.getElementById('content').innerHTML=await fn(); }
+    catch(e){ document.getElementById('content').innerHTML=`<div class="empty"><div class="ei">⚠️</div><div class="et">Imeshindikana kupakia</div><div class="es">${e.message}</div></div>`; }
+  }
+}
+
+/* ═══ OVERVIEW ═══ */
+async function pgOverview(){
+  const [stats, bars, farmers, txns] = await Promise.all([
+    api('/admin/stats'), api('/admin/weekly-activity'), api('/users/?role=mkulima&limit=5'), api('/admin/transactions/all')
+  ]);
+  document.getElementById('tb-sub').textContent=`Jumla ya wakulima: ${stats.total_farmers}`;
+  const maxV=Math.max(...bars.map(b=>b.count),1);
+  const recentTxns=txns.slice(0,3);
+  return `
+  <div class="stat-grid">
+    <div class="sc g" onclick="navTo('farmers')"><div class="sc-ico">👩🏾‍🌾</div><div class="sc-lbl">Wakulima</div><div class="sc-val g">${stats.total_farmers}</div><div class="sc-sub ${stats.total_farmers>0?'up':''}">Waliojisajili</div></div>
+    <div class="sc a" onclick="navTo('transactions')"><div class="sc-ico">💰</div><div class="sc-lbl">Mapato</div><div class="sc-val a">TZS ${stats.total_revenue.toLocaleString()}</div><div class="sc-sub up">Miamala yote</div></div>
+    <div class="sc b" onclick="navTo('groups')"><div class="sc-ico">🤝</div><div class="sc-lbl">Vikundi Hai</div><div class="sc-val b">${stats.active_groups}</div><div class="sc-sub up">Vinavyoendelea</div></div>
+    <div class="sc r" onclick="navTo('logistics')"><div class="sc-ico">🚛</div><div class="sc-lbl">Safari Safarini</div><div class="sc-val r">${stats.active_trips}</div><div class="sc-sub">Sasa hivi</div></div>
+  </div>
+  <div class="grid31">
+    <div class="cc">
+      <div class="ct">📈 Miamala kwa Wiki<span style="font-size:10px;color:var(--muted);font-weight:400">Data halisi</span></div>
+      <div class="bar-ch">
+        ${bars.map((b,i)=>{ const h=Math.max(Math.round((b.count/maxV)*108),4); return `<div class="bc"><div class="bc-v">${b.count}</div><div class="bc-bar" style="height:${h}px;background:${i===bars.length-1?'var(--green)':'var(--dim)'}"></div><div class="bc-l">${b.label}</div></div>`; }).join('')}
+      </div>
+    </div>
+    <div class="cc" style="padding:0">
+      <div style="padding:16px 18px 12px;border-bottom:1px solid var(--border)"><div class="ct" style="margin:0">⚡ Hivi Karibuni</div></div>
+      <div class="af">
+        ${[...farmers.slice(0,3).map(f=>`<div class="ai"><div class="ad g"></div><div><div class="am">${f.full_name} amesajiliwa kutoka ${f.region||'—'}</div><div class="at">${new Date(f.created_at).toLocaleDateString('sw-TZ')}</div></div></div>`),
+           ...recentTxns.map(t=>`<div class="ai"><div class="ad a"></div><div><div class="am">${t.farmer}: ${t.type} — TZS ${t.amount.toLocaleString()}</div><div class="at">${t.date}</div></div></div>`),
+           (farmers.length===0&&recentTxns.length===0)?`<div class="ai"><div class="ad b"></div><div><div class="am">Mfumo uko tayari kupokea data mpya</div><div class="at">Sasa hivi</div></div></div>`:''
+          ].filter(Boolean).slice(0,5).join('')}
+      </div>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="cc" style="padding:0">
+      <div style="padding:14px 18px 12px;border-bottom:1px solid var(--border)"><div class="ct" style="margin:0">🗺️ Ramani ya Vituo</div></div>
+      <div style="padding:10px">
+        <div class="map-box">
+          <div class="mg"></div>
+          <div class="mrl" style="top:38%;left:28%;width:36%;transform:rotate(22deg)"></div>
+          <div class="mrl" style="top:52%;left:22%;width:20%;transform:rotate(-10deg)"></div>
+          <div class="mp" style="top:28%;left:62%">📍</div>
+          <div class="mp" style="top:56%;left:70%">🏙️</div>
+          <div class="mp" style="top:22%;left:17%">📍</div>
+          <div class="mp" style="top:70%;left:80%">🏝️</div>
+          <div class="mp" style="top:78%;left:54%">📍</div>
+          <div style="position:absolute;bottom:8px;left:10px;display:flex;flex-direction:column;gap:3px">
+            <div style="display:flex;align-items:center;gap:5px;font-size:8px;color:rgba(255,255,255,.35)"><div style="width:6px;height:6px;border-radius:50%;background:var(--green)"></div>Kituo</div>
+            <div style="display:flex;align-items:center;gap:5px;font-size:8px;color:rgba(255,255,255,.35)"><div style="width:6px;height:6px;border-radius:50%;background:var(--sky)"></div>Safari</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="cc" style="padding:0">
+      <div style="padding:14px 18px 12px;border-bottom:1px solid var(--border)"><div class="ct" style="margin:0">🏆 Wakulima wa Hivi Karibuni</div></div>
+      ${farmers.length===0?`<div class="empty"><div class="ei">👩🏾‍🌾</div><div class="et">Bado hakuna wakulima</div><div class="es">Wataonekana baada ya kujisajili</div></div>`:
+        farmers.map((f,i)=>{ const s=f.farmer_profile?f.farmer_profile.trust_score:500; return `
+        <div class="ai">
+          <div style="font-size:15px;width:20px;text-align:center">${i===0?'🥇':i===1?'🥈':i===2?'🥉':'◦'}</div>
+          <div style="flex:1">
+            <div style="font-size:12px;font-weight:700">${f.full_name}</div>
+            <div style="font-size:10px;color:var(--muted)">${f.region||'—'} · ${f.farmer_profile?(f.farmer_profile.crops||'—').split(',')[0]:'—'}</div>
+            <div class="prog-bg" style="width:120px;margin-top:4px"><div class="prog-fill" style="width:${s/10}%"></div></div>
+          </div>
+          <div style="font-size:11px;color:var(--green);font-weight:700">${s}/1000</div>
+        </div>`; }).join('')}
+    </div>
+  </div>`;
+}
+
+/* ═══ FARMERS ═══ */
+function farmerRows(list){
+  if(!list.length) return `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted)">Hakuna wakulima bado. Watasajiliwa kupitia App ya Mkulima au ongeza mwenyewe.</td></tr>`;
+  return list.map(f=>{ const fp=f.farmer_profile||{}; const s=fp.trust_score||500; const tier=fp.tier||'Shaba'; return `<tr>
+    <td><div style="font-weight:700">${f.full_name}</div><div style="font-size:10px;color:var(--muted)">${f.phone}</div></td>
+    <td>📍 ${f.region||'—'}</td><td>${fp.crops||'—'}</td><td>${fp.farm_size||0} ha</td>
+    <td><strong>${s}</strong>/1000</td>
+    <td><span class="badge ${s>700?'g':s>600?'a':'b'}">${tier}</span></td>
+    <td><span class="badge ${f.status==='active'?'g':'r'}">${f.status}</span></td>
+    <td><div class="abtns"><button class="ab" onclick="viewFarmer('${f.id}')">Angalia</button><button class="ab del" onclick="delFarmer('${f.id}')">Futa</button></div></td>
+  </tr>`; }).join('');
+}
+async function pgFarmers(){
+  cache.farmers=await api('/users/?role=mkulima&limit=100');
+  return `<div class="tcard">
+    <div class="tc-head">
+      <div style="display:flex;align-items:center;gap:10px"><div class="tc-title">👩🏾‍🌾 Wakulima</div><span class="tc-cnt">${cache.farmers.length}</span></div>
+      <div class="tc-actions">
+        <input class="si" id="fs" oninput="filterFarmers()" placeholder="🔍 Tafuta jina, mkoa...">
+        <select class="fs" id="ft" onchange="filterFarmers()"><option value="">Kiwango Chote</option><option>Dhahabu</option><option>Fedha</option><option>Shaba</option></select>
+      </div>
+    </div>
+    <table><thead><tr><th>Jina</th><th>Mkoa</th><th>Mazao</th><th>Shamba</th><th>Alama</th><th>Kiwango</th><th>Hali</th><th>Vitendo</th></tr></thead>
+    <tbody id="ftbody">${farmerRows(cache.farmers)}</tbody></table>
+  </div>`;
+}
+function filterFarmers(){
+  const q=(document.getElementById('fs')?.value||'').toLowerCase();
+  const t=document.getElementById('ft')?.value||'';
+  const filtered=cache.farmers.filter(f=>(!q||(f.full_name.toLowerCase().includes(q)||(f.region||'').toLowerCase().includes(q)))&&(!t||(f.farmer_profile&&f.farmer_profile.tier===t)));
+  document.getElementById('ftbody').innerHTML=farmerRows(filtered);
+}
+function viewFarmer(id){
+  const f=cache.farmers.find(x=>x.id===id); if(!f) return;
+  const fp=f.farmer_profile||{};
+  openModal(`<div class="mh">👤 ${f.full_name}</div><div class="ms">Maelezo kamili ya mkulima</div>
+    ${[['Jina',f.full_name],['Simu',f.phone],['Malipo',fp.payment_method||'—'],['Mkoa',f.region||'—'],['Shamba',(fp.farm_size||0)+' hekta'],['Mazao',fp.crops||'—'],['Alama',(fp.trust_score||500)+'/1000'],['Kiwango',fp.tier||'Shaba'],['Hali',f.status]].map(([k,v])=>`<div class="detail-row"><span class="dk">${k}</span><span class="dv">${v}</span></div>`).join('')}
+    <div class="prog-bg" style="margin-top:12px"><div class="prog-fill" style="width:${(fp.trust_score||500)/10}%"></div></div>
+    <div class="mbtns"><button class="mbtn c" onclick="closeModal()">Funga</button></div>`);
+}
+async function delFarmer(id){
+  if(!confirm('Futa mkulima huyu?')) return;
+  try{ await api('/users/'+id,{method:'DELETE'}); toast('Mkulima amefutwa','info'); navTo('farmers'); }
+  catch(e){ toast(e.message,'err'); }
+}
+
+/* ═══ GROUPS ═══ */
+async function pgGroups(){
+  cache.groups=await api('/groups/');
+  const rows=cache.groups.length===0?`<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted)">Hakuna vikundi bado. Bonyeza "+ Kikundi" kuunda kipya.</td></tr>`:
+    cache.groups.map(g=>`<tr>
+      <td style="font-weight:700">${g.emoji||'🌾'} ${g.product}</td>
+      <td>📍 ${g.region}</td>
+      <td style="color:var(--muted);text-decoration:line-through">TZS ${Math.round(g.retail_price).toLocaleString()}</td>
+      <td style="color:var(--green);font-weight:700">TZS ${Math.round(g.group_price).toLocaleString()}</td>
+      <td><strong>${g.current_members}</strong>/${g.target_members}</td>
+      <td style="color:var(--gold)">⏱ ${g.deadline}</td>
+      <td><span class="badge ${g.status==='Hai'?'g':g.status==='Imejaa'?'b':'a'}">${g.status}</span></td>
+      <td><div class="abtns"><button class="ab del" onclick="delGroup('${g.id}')">Futa</button></div></td>
+    </tr>`).join('');
+  return `<div class="tcard"><div class="tc-head"><div style="display:flex;align-items:center;gap:10px"><div class="tc-title">🤝 Vikundi</div><span class="tc-cnt">${cache.groups.length}</span></div></div>
+  <table><thead><tr><th>Bidhaa</th><th>Mkoa</th><th>Bei Kawaida</th><th>Bei Pamoja</th><th>Wanachama</th><th>Muda</th><th>Hali</th><th>Vitendo</th></tr></thead>
+  <tbody>${rows}</tbody></table></div>`;
+}
+async function delGroup(id){
+  if(!confirm('Futa kikundi hiki?')) return;
+  try{ await api('/groups/'+id,{method:'DELETE'}); toast('Kikundi kimefutwa','info'); navTo('groups'); }
+  catch(e){ toast(e.message,'err'); }
+}
+
+/* ═══ LOGISTICS ═══ */
+async function pgLogistics(){
+  cache.logistics=await api('/logistics/');
+  const rows=cache.logistics.length===0?`<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--muted)">Hakuna safari bado. Bonyeza "+ Safari" kuunda mpya.</td></tr>`:
+    cache.logistics.map(l=>`<tr>
+      <td style="font-weight:700">🚛 ${l.truck_number||'—'}</td>
+      <td>${l.origin} → ${l.destination}</td>
+      <td>${l.capacity_tons} Tani</td>
+      <td><span class="badge ${l.status==='Safarini'?'b':l.status==='Imekamilika'?'g':l.status==='Imehifadhiwa'?'p':'a'}">${l.status}</span></td>
+      <td style="color:var(--gold)">${l.eta||'—'}</td>
+      <td><div class="abtns">
+        <button class="ab" onclick="changeStatus('${l.id}')">Badilisha Hali</button>
+        <button class="ab del" onclick="delTrip('${l.id}')">Futa</button>
+      </div></td>
+    </tr>`).join('');
+  return `<div class="tcard"><div class="tc-head"><div style="display:flex;align-items:center;gap:10px"><div class="tc-title">🚛 Safari</div><span class="tc-cnt">${cache.logistics.length}</span></div></div>
+  <table><thead><tr><th>Lori</th><th>Njia</th><th>Uzito</th><th>Hali</th><th>ETA</th><th>Vitendo</th></tr></thead>
+  <tbody>${rows}</tbody></table></div>`;
+}
+async function changeStatus(id){
+  const l=cache.logistics.find(x=>x.id===id); if(!l) return;
+  const s=['Inasubiri','Imehifadhiwa','Safarini','Imekamilika']; const ns=s[(s.indexOf(l.status)+1)%s.length];
+  try{ await api('/logistics/'+id+'/status',{method:'PATCH',body:JSON.stringify({new_status:ns})}); toast('Hali: '+ns,'info'); navTo('logistics'); }
+  catch(e){ toast(e.message,'err'); }
+}
+async function delTrip(id){
+  if(!confirm('Futa safari hii?')) return;
+  try{ await api('/logistics/'+id,{method:'DELETE'}); toast('Safari imefutwa','info'); navTo('logistics'); }
+  catch(e){ toast(e.message,'err'); }
+}
+
+/* ═══ PRODUCTS ═══ */
+async function pgProducts(){
+  cache.products=await api('/products/');
+  const rows=cache.products.length===0?`<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--muted)">Hakuna bidhaa bado.</td></tr>`:
+    cache.products.map(p=>`<tr>
+      <td style="font-weight:700">${p.emoji||'🌾'} ${p.name}</td>
+      <td><span class="badge a">${p.grade}</span></td>
+      <td style="color:var(--muted);text-decoration:line-through">TZS ${Math.round(p.retail_price).toLocaleString()}/kg</td>
+      <td style="color:var(--green);font-weight:700">TZS ${Math.round(p.group_price).toLocaleString()}/kg</td>
+      <td>${p.stock_kg} kg</td>
+      <td>📍 ${p.region||'—'}</td>
+      <td><div class="abtns"><button class="ab del" onclick="delProduct('${p.id}')">Futa</button></div></td>
+    </tr>`).join('');
+  return `<div class="tcard"><div class="tc-head"><div style="display:flex;align-items:center;gap:10px"><div class="tc-title">🌾 Bidhaa</div><span class="tc-cnt">${cache.products.length}</span></div></div>
+  <table><thead><tr><th>Bidhaa</th><th>Daraja</th><th>Bei Kawaida/kg</th><th>Bei Pamoja/kg</th><th>Akiba</th><th>Mkoa</th><th>Vitendo</th></tr></thead>
+  <tbody>${rows}</tbody></table></div>`;
+}
+async function delProduct(id){
+  if(!confirm('Ondoa bidhaa hii sokoni?')) return;
+  try{ await api('/products/'+id,{method:'DELETE'}); toast('Bidhaa imeondolewa','info'); navTo('products'); }
+  catch(e){ toast(e.message,'err'); }
+}
+
+/* ═══ TRANSACTIONS ═══ */
+async function pgTransactions(){
+  const txns=await api('/admin/transactions/all');
+  const rows=txns.length===0?`<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--muted)">Hakuna miamala bado. Itaonekana baada ya wakulima kuanza kutumia mfumo.</td></tr>`:
+    txns.map(t=>`<tr>
+      <td style="font-family:monospace;font-size:10px;color:var(--muted)">${t.id}</td>
+      <td style="font-weight:600">${t.farmer}</td>
+      <td>${t.type}</td>
+      <td style="color:var(--green);font-weight:700">TZS ${t.amount.toLocaleString()}</td>
+      <td>${t.payment_method}</td>
+      <td>${t.date}</td>
+      <td><span class="badge ${t.status==='Imekamilika'?'g':t.status==='Inasubiri'?'a':'r'}">${t.status}</span></td>
+    </tr>`).join('');
+  return `<div class="tcard"><div class="tc-head"><div style="display:flex;align-items:center;gap:10px"><div class="tc-title">💳 Miamala</div><span class="tc-cnt">${txns.length}</span></div></div>
+  <table><thead><tr><th>ID</th><th>Mkulima</th><th>Aina</th><th>Kiasi</th><th>Njia</th><th>Tarehe</th><th>Hali</th></tr></thead>
+  <tbody>${rows}</tbody></table></div>`;
+}
+
+/* ═══ LOANS ═══ */
+async function pgLoans(){
+  cache.loans=await api('/loans/');
+  const byUser=Object.fromEntries((cache.farmers.length?cache.farmers:await api('/users/?role=mkulima&limit=100')).map(f=>[f.id,f.full_name]));
+  const rows=cache.loans.length===0?`<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--muted)">Hakuna maombi ya mikopo bado.</td></tr>`:
+    cache.loans.slice().reverse().map(l=>`<tr>
+      <td style="font-weight:600">${byUser[l.user_id]||'—'}</td>
+      <td>🏦 ${l.bank_name}</td>
+      <td style="color:var(--green);font-weight:700">TZS ${l.amount.toLocaleString()}</td>
+      <td>${l.interest_rate}</td>
+      <td><strong>${l.trust_score}</strong>/1000</td>
+      <td>${new Date(l.created_at).toLocaleDateString('sw-TZ')}</td>
+      <td>${l.status==='Inasubiri'?`<div class="abtns">
+        <button class="ab approve" onclick="approveLoan('${l.id}')">✓ Idhini</button>
+        <button class="ab del" onclick="rejectLoan('${l.id}')">Kataa</button>
+      </div>`:`<span class="badge ${l.status==='Imeidhinishwa'?'g':'r'}">${l.status}</span>`}</td>
+    </tr>`).join('');
+  return `<div class="tcard"><div class="tc-head"><div style="display:flex;align-items:center;gap:10px"><div class="tc-title">🏦 Mikopo</div><span class="tc-cnt">${cache.loans.length}</span></div></div>
+  <table><thead><tr><th>Mkulima</th><th>Benki</th><th>Kiasi</th><th>Riba</th><th>Alama</th><th>Tarehe</th><th>Vitendo</th></tr></thead>
+  <tbody>${rows}</tbody></table></div>`;
+}
+async function approveLoan(id){
+  try{ await api('/loans/'+id+'/approve',{method:'PATCH'}); toast('✓ Mkopo umeidhinishwa!'); navTo('loans'); }
+  catch(e){ toast(e.message,'err'); }
+}
+async function rejectLoan(id){
+  try{ await api('/loans/'+id+'/reject',{method:'PATCH'}); toast('Mkopo umekataliwa','warn'); navTo('loans'); }
+  catch(e){ toast(e.message,'err'); }
+}
+
+/* ═══ ALERTS ═══ */
+async function pgAlerts(){
+  cache.alerts=await api('/alerts/');
+  const rows=cache.alerts.length===0?`<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--muted)">Hakuna tahadhari bado.</td></tr>`:
+    cache.alerts.map(a=>`<tr>
+      <td>${a.alert_type}</td>
+      <td>📍 ${a.region}</td>
+      <td style="font-size:11px;max-width:200px">${a.message}</td>
+      <td><span class="badge ${a.level==='Hatari'?'r':a.level==='Habari Njema'?'g':'a'}">${a.level}</span></td>
+      <td>${new Date(a.created_at).toLocaleDateString('sw-TZ')}</td>
+      <td><div class="abtns"><button class="ab del" onclick="delAlert('${a.id}')">Futa</button></div></td>
+    </tr>`).join('');
+  return `<div class="tcard"><div class="tc-head"><div style="display:flex;align-items:center;gap:10px"><div class="tc-title">⚠️ Tahadhari</div><span class="tc-cnt">${cache.alerts.length}</span></div></div>
+  <table><thead><tr><th>Aina</th><th>Eneo</th><th>Ujumbe</th><th>Kiwango</th><th>Tarehe</th><th>Vitendo</th></tr></thead>
+  <tbody>${rows}</tbody></table></div>`;
+}
+async function delAlert(id){
+  if(!confirm('Futa tahadhari hii?')) return;
+  try{ await api('/alerts/'+id,{method:'DELETE'}); toast('Tahadhari imefutwa','info'); buildNav(); navTo('alerts'); }
+  catch(e){ toast(e.message,'err'); }
+}
+
+/* ═══ MARKETS ═══ */
+async function pgMarkets(){
+  cache.markets=await api('/markets/');
+  const rows=cache.markets.map(m=>`<tr>
+    <td style="font-weight:700">${m.crop}</td>
+    <td><span class="badge a">${m.grade}</span></td>
+    <td style="font-weight:700">TZS ${Math.round(m.price_tzs).toLocaleString()}</td>
+    <td style="color:${m.trending_up?'var(--green)':'var(--red)'}">${m.trending_up?'↑':'↓'} ${Math.abs(m.change_pct)}%</td>
+    <td>📍 ${m.market_name}</td>
+    <td style="color:var(--gold)">${m.export_price}</td>
+    <td><div class="abtns"><button class="ab" onclick="openMarketModal('${m.id}')">Hariri</button><button class="ab del" onclick="delMarket('${m.id}')">Futa</button></div></td>
+  </tr>`).join('');
+  return `<div class="tcard"><div class="tc-head">
+    <div style="display:flex;align-items:center;gap:10px"><div class="tc-title">📈 Bei za Soko</div><span class="tc-cnt">${cache.markets.length}</span></div>
+    <div class="tc-actions"><button class="btn btn-g" style="font-size:11px" onclick="openMarketModal()">＋ Bei Mpya</button></div>
+  </div>
+  <table><thead><tr><th>Zao</th><th>Daraja</th><th>Bei</th><th>Badiliko</th><th>Soko</th><th>Export</th><th>Vitendo</th></tr></thead>
+  <tbody>${rows}</tbody></table></div>`;
+}
+function openMarketModal(id){
+  const m=id?cache.markets.find(x=>x.id===id):null;
+  openModal(`<div class="mh">📈 ${m?'Hariri Bei':'Bei Mpya'}</div><div class="ms">${m?'Sasisha bei ya soko':'Ongeza zao jipya la soko'}</div>
+  <input type="hidden" id="mk-id" value="${m?m.id:''}">
+  <div class="fg"><div class="fg2"><label class="fl">Zao *</label><input class="fi" id="mk-crop" value="${m?m.crop:''}" placeholder="Avokado Hass"></div><div class="fg2"><label class="fl">Daraja</label><input class="fi" id="mk-grade" value="${m?m.grade:'Daraja A'}"></div></div>
+  <div class="fg"><div class="fg2"><label class="fl">Bei (TZS/kg) *</label><input class="fi" id="mk-price" type="number" value="${m?m.price_tzs:''}"></div><div class="fg2"><label class="fl">Badiliko (%)</label><input class="fi" id="mk-chg" type="number" step="0.1" value="${m?m.change_pct:0}"></div></div>
+  <div class="fg"><div class="fg2"><label class="fl">Soko Kuu *</label><input class="fi" id="mk-market" value="${m?m.market_name:''}" placeholder="Dar es Salaam"></div><div class="fg2"><label class="fl">Bei ya Export</label><input class="fi" id="mk-export" value="${m?m.export_price:'—'}"></div></div>
+  <div class="mbtns"><button class="mbtn c" onclick="closeModal()">Funga</button><button class="mbtn g" onclick="saveMarket()">✓ Hifadhi</button></div>`);
+}
+async function saveMarket(){
+  const id=document.getElementById('mk-id').value;
+  const body={
+    crop:document.getElementById('mk-crop').value.trim(), grade:document.getElementById('mk-grade').value.trim()||'Daraja A',
+    price_tzs:parseFloat(document.getElementById('mk-price').value)||0, change_pct:parseFloat(document.getElementById('mk-chg').value)||0,
+    trending_up:(parseFloat(document.getElementById('mk-chg').value)||0)>=0,
+    market_name:document.getElementById('mk-market').value.trim(), export_price:document.getElementById('mk-export').value.trim()||'—',
+  };
+  if(!body.crop||!body.price_tzs||!body.market_name){ toast('Jaza sehemu zote *','err'); return; }
+  try{
+    if(id) await api('/markets/'+id,{method:'PUT',body:JSON.stringify(body)});
+    else await api('/markets/',{method:'POST',body:JSON.stringify(body)});
+    closeModal(); navTo('markets'); toast('✓ Bei imehifadhiwa!');
+  }catch(e){ toast(e.message,'err'); }
+}
+async function delMarket(id){
+  if(!confirm('Futa bei hii?')) return;
+  try{ await api('/markets/'+id,{method:'DELETE'}); toast('Bei imefutwa','info'); navTo('markets'); }
+  catch(e){ toast(e.message,'err'); }
+}
+
+/* ═══ ADD MODALS ═══ */
+function openAddModal(){
+  const fns={farmers:mAddFarmer,groups:mAddGroup,logistics:mAddLogistics,products:mAddProduct,loans:mAddLoan,alerts:mAddAlert};
+  const fn=fns[curPage]; if(fn) openModal(fn());
+}
+
+function mAddFarmer(){ return `<div class="mh">🌱 Ongeza Mkulima Mpya</div><div class="ms">Sajili mkulima kwenye mfumo</div>
+  <div class="fg"><div class="fg2"><label class="fl">Jina la Kwanza *</label><input class="fi" id="af-fn" placeholder="Jina"></div><div class="fg2"><label class="fl">Jina la Familia *</label><input class="fi" id="af-ln" placeholder="Ukoo"></div></div>
+  <div class="fg"><div class="fg2"><label class="fl">Namba ya Simu *</label><input class="fi" id="af-ph" placeholder="+255 7XX XXX XXX"></div><div class="fg2"><label class="fl">Password ya Muda *</label><input class="fi" id="af-pw" placeholder="Herufi 6+"></div></div>
+  <div class="fg"><div class="fg2"><label class="fl">Mkoa *</label><select class="fsel" id="af-rg"><option value="">Chagua...</option>${['Arusha','Dar es Salaam','Mwanza','Zanzibar','Mtwara','Dodoma','Morogoro','Tanga'].map(r=>`<option>${r}</option>`).join('')}</select></div><div class="fg2"><label class="fl">Shamba (Hekta)</label><input class="fi" id="af-hk" type="number" step="0.1" placeholder="2.5"></div></div>
+  <div class="fg one"><div class="fg2"><label class="fl">Mazao *</label><input class="fi" id="af-cr" placeholder="Avokado, Ufuta..."></div></div>
+  <div class="mbtns"><button class="mbtn c" onclick="closeModal()">Funga</button><button class="mbtn g" onclick="saveFarmer()">✓ Sajili</button></div>`; }
+async function saveFarmer(){
+  const body={
+    first_name:document.getElementById('af-fn').value.trim(), last_name:document.getElementById('af-ln').value.trim(),
+    phone:document.getElementById('af-ph').value.trim(), password:document.getElementById('af-pw').value,
+    region:document.getElementById('af-rg').value, farm_size:parseFloat(document.getElementById('af-hk').value)||0,
+    crops:document.getElementById('af-cr').value.trim(), role:'mkulima',
+  };
+  if(!body.first_name||!body.last_name||!body.phone||!body.password||!body.region||!body.crops){ toast('Jaza sehemu zote *','err'); return; }
+  try{ await api('/auth/register',{method:'POST',body:JSON.stringify(body)}); closeModal(); navTo('farmers'); toast('✓ '+body.first_name+' ameongezwa!'); }
+  catch(e){ toast(e.message,'err'); }
+}
+
+function mAddGroup(){ const em=['🥑','🌾','🥭','🫘','🌰','🌱','🍍','🌽']; return `<div class="mh">🤝 Kikundi Kipya</div><div class="ms">Unda kikundi kipya cha ununuzi wa pamoja</div>
+  <div class="fg"><div class="fg2"><label class="fl">Bidhaa *</label><input class="fi" id="ag-pr" placeholder="Avokado Hass"></div><div class="fg2"><label class="fl">Emoji</label><select class="fsel" id="ag-em">${em.map(e=>`<option value="${e}">${e}</option>`).join('')}</select></div></div>
+  <div class="fg"><div class="fg2"><label class="fl">Daraja</label><input class="fi" id="ag-gr" placeholder="Daraja A, Export..."></div><div class="fg2"><label class="fl">Mkoa *</label><select class="fsel" id="ag-rg"><option value="">Chagua...</option>${['Arusha','Dar es Salaam','Mwanza','Zanzibar','Mtwara','Dodoma','Morogoro'].map(r=>`<option>${r}</option>`).join('')}</select></div></div>
+  <div class="fg"><div class="fg2"><label class="fl">Bei Kawaida (TZS) *</label><input class="fi" id="ag-ret" type="number" placeholder="28000"></div><div class="fg2"><label class="fl">Bei Pamoja (TZS) *</label><input class="fi" id="ag-grp" type="number" placeholder="18500"></div></div>
+  <div class="fg"><div class="fg2"><label class="fl">Wanachama Wanaohitajika *</label><input class="fi" id="ag-tg" type="number" placeholder="20"></div><div class="fg2"><label class="fl">Muda wa Kuisha</label><input class="fi" id="ag-dl" placeholder="Masaa 24"></div></div>
+  <div class="mbtns"><button class="mbtn c" onclick="closeModal()">Funga</button><button class="mbtn g" onclick="saveGroup_()">✓ Unda Kikundi</button></div>`; }
+async function saveGroup_(){
+  const body={
+    product:document.getElementById('ag-pr').value.trim(), emoji:document.getElementById('ag-em').value,
+    grade:document.getElementById('ag-gr').value.trim()||'Daraja A', region:document.getElementById('ag-rg').value,
+    retail_price:parseFloat(document.getElementById('ag-ret').value)||0, group_price:parseFloat(document.getElementById('ag-grp').value)||0,
+    target_members:parseInt(document.getElementById('ag-tg').value)||20, deadline:document.getElementById('ag-dl').value.trim()||'Masaa 24',
+  };
+  if(!body.product||!body.region||!body.retail_price||!body.group_price){ toast('Jaza sehemu zote *','err'); return; }
+  try{ await api('/groups/',{method:'POST',body:JSON.stringify(body)}); closeModal(); navTo('groups'); toast('✓ Kikundi cha '+body.product+' kimeundwa!'); }
+  catch(e){ toast(e.message,'err'); }
+}
+
+function mAddLogistics(){ return `<div class="mh">🚛 Safari Mpya</div><div class="ms">Sajili safari mpya ya usafirishaji</div>
+  <div class="fg"><div class="fg2"><label class="fl">Namba ya Lori *</label><input class="fi" id="al-t" placeholder="T XXX ABC"></div><div class="fg2"><label class="fl">Uwezo (Tani) *</label><input class="fi" id="al-c" type="number" placeholder="8"></div></div>
+  <div class="fg"><div class="fg2"><label class="fl">Kutoka *</label><select class="fsel" id="al-f"><option value="">Chagua...</option>${['Arusha','Mwanza','Moshi','Zanzibar','Mtwara','Dodoma','Morogoro'].map(r=>`<option>${r}</option>`).join('')}</select></div>
+  <div class="fg2"><label class="fl">Kwenda *</label><select class="fsel" id="al-to"><option value="">Chagua...</option>${['Dar es Salaam','Arusha','Mwanza','Dodoma','Zanzibar','Mtwara'].map(r=>`<option>${r}</option>`).join('')}</select></div></div>
+  <div class="fg one"><div class="fg2"><label class="fl">ETA</label><input class="fi" id="al-e" placeholder="Leo 17:30"></div></div>
+  <div class="mbtns"><button class="mbtn c" onclick="closeModal()">Funga</button><button class="mbtn g" onclick="saveLogistics_()">✓ Sajili</button></div>`; }
+async function saveLogistics_(){
+  const body={ truck_number:document.getElementById('al-t').value.trim(), capacity_tons:parseFloat(document.getElementById('al-c').value)||0,
+    origin:document.getElementById('al-f').value, destination:document.getElementById('al-to').value, eta:document.getElementById('al-e').value.trim()||'—' };
+  if(!body.truck_number||!body.origin||!body.destination||!body.capacity_tons){ toast('Jaza sehemu zote *','err'); return; }
+  try{ await api('/logistics/',{method:'POST',body:JSON.stringify(body)}); closeModal(); navTo('logistics'); toast('✓ Safari ya '+body.truck_number+' imesajiliwa!'); }
+  catch(e){ toast(e.message,'err'); }
+}
+
+function mAddProduct(){ const em=['🥑','🌾','🥭','🫘','🌰','🌱','🍍','🌽','🥜']; return `<div class="mh">🌾 Bidhaa Mpya</div><div class="ms">Ongeza zao jipya sokoni</div>
+  <div class="fg"><div class="fg2"><label class="fl">Jina la Bidhaa *</label><input class="fi" id="ap-n" placeholder="Avokado Hass"></div><div class="fg2"><label class="fl">Emoji</label><select class="fsel" id="ap-em">${em.map(e=>`<option value="${e}">${e}</option>`).join('')}</select></div></div>
+  <div class="fg"><div class="fg2"><label class="fl">Daraja</label><input class="fi" id="ap-gr" placeholder="Daraja A"></div><div class="fg2"><label class="fl">Mkoa</label><select class="fsel" id="ap-rg"><option value="">Chagua...</option>${['Arusha','Zanzibar','Mtwara','Morogoro','Njombe'].map(r=>`<option>${r}</option>`).join('')}</select></div></div>
+  <div class="fg"><div class="fg2"><label class="fl">Bei Kawaida/kg (TZS) *</label><input class="fi" id="ap-ret" type="number" placeholder="28000"></div><div class="fg2"><label class="fl">Bei Pamoja/kg (TZS) *</label><input class="fi" id="ap-grp" type="number" placeholder="18500"></div></div>
+  <div class="fg one"><div class="fg2"><label class="fl">Akiba (kg)</label><input class="fi" id="ap-s" type="number" placeholder="1000"></div></div>
+  <div class="mbtns"><button class="mbtn c" onclick="closeModal()">Funga</button><button class="mbtn g" onclick="saveProduct_()">✓ Ongeza</button></div>`; }
+async function saveProduct_(){
+  const body={ name:document.getElementById('ap-n').value.trim(), emoji:document.getElementById('ap-em').value, grade:document.getElementById('ap-gr').value.trim()||'Daraja A',
+    region:document.getElementById('ap-rg').value, retail_price:parseFloat(document.getElementById('ap-ret').value)||0,
+    group_price:parseFloat(document.getElementById('ap-grp').value)||0, stock_kg:parseFloat(document.getElementById('ap-s').value)||0 };
+  if(!body.name||!body.retail_price||!body.group_price){ toast('Jaza sehemu zote *','err'); return; }
+  try{ await api('/products/',{method:'POST',body:JSON.stringify(body)}); closeModal(); navTo('products'); toast('✓ '+body.name+' imeongezwa!'); }
+  catch(e){ toast(e.message,'err'); }
+}
+
+function mAddLoan(){ const farmers=cache.farmers.length?cache.farmers:[]; return `<div class="mh">🏦 Mkopo Mpya</div><div class="ms">Ongeza mkopo wa mkulima</div>
+  <div class="fg"><div class="fg2"><label class="fl">Mkulima *</label><select class="fsel" id="alo-f"><option value="">Chagua mkulima...</option>${farmers.map(f=>`<option value="${f.id}">${f.full_name}</option>`).join('')}</select></div>
+  <div class="fg2"><label class="fl">Benki *</label><select class="fsel" id="alo-b"><option>CRDB Bank</option><option>NMB Bank</option><option>Equity Bank</option><option>M-Pesa Benki</option></select></div></div>
+  <div class="fg"><div class="fg2"><label class="fl">Kiasi (TZS) *</label><input class="fi" id="alo-a" type="number" placeholder="1200000"></div><div class="fg2"><label class="fl">Riba (%/mwaka)</label><input class="fi" id="alo-r" type="number" placeholder="8"></div></div>
+  <div class="fg one"><div class="fg2"><label class="fl">Kusudi</label><input class="fi" id="alo-p" placeholder="Mbegu, Mbolea, Zana..."></div></div>
+  <div class="mbtns"><button class="mbtn c" onclick="closeModal()">Funga</button><button class="mbtn g" onclick="saveLoan_()">✓ Hifadhi</button></div>`; }
+async function saveLoan_(){
+  const body={ user_id:document.getElementById('alo-f').value, bank_name:document.getElementById('alo-b').value,
+    amount:parseFloat(document.getElementById('alo-a').value)||0, interest_rate:(document.getElementById('alo-r').value||'8')+'%',
+    purpose:document.getElementById('alo-p').value.trim()||'Kilimo' };
+  if(!body.user_id||!body.amount){ toast('Jaza sehemu zote *','err'); return; }
+  try{ await api('/loans/',{method:'POST',body:JSON.stringify(body)}); closeModal(); navTo('loans'); toast('✓ Mkopo umehifadhiwa!'); }
+  catch(e){ toast(e.message,'err'); }
+}
+
+function mAddAlert(){ return `<div class="mh">⚠️ Tahadhari Mpya</div><div class="ms">Tuma tahadhari kwa wakulima</div>
+  <div class="fg"><div class="fg2"><label class="fl">Aina *</label><select class="fsel" id="aa-t"><option>🦟 Wadudu</option><option>🌧 Mvua Kubwa</option><option>🌡 Joto Kali</option><option>📈 Fursa ya Soko</option><option>⚠️ Nyingine</option></select></div>
+  <div class="fg2"><label class="fl">Kiwango *</label><select class="fsel" id="aa-l"><option>Hatari</option><option>Angalizo</option><option>Habari Njema</option></select></div></div>
+  <div class="fg one"><div class="fg2"><label class="fl">Eneo *</label><select class="fsel" id="aa-r"><option value="">Chagua...</option><option>Tanzania nzima</option>${['Arusha','Dar es Salaam','Mwanza','Zanzibar','Mtwara','Dodoma','Morogoro','Tanga'].map(r=>`<option>${r}</option>`).join('')}</select></div></div>
+  <div class="fg one"><div class="fg2"><label class="fl">Ujumbe * (herufi 10+)</label><textarea class="fta" id="aa-m" placeholder="Andika ujumbe wa tahadhari hapa..."></textarea></div></div>
+  <div class="mbtns"><button class="mbtn c" onclick="closeModal()">Funga</button><button class="mbtn g" onclick="saveAlert_()">📤 Tuma Tahadhari</button></div>`; }
+async function saveAlert_(){
+  const body={ alert_type:document.getElementById('aa-t').value, level:document.getElementById('aa-l').value,
+    region:document.getElementById('aa-r').value, message:document.getElementById('aa-m').value.trim() };
+  if(!body.region||!body.message){ toast('Jaza sehemu zote *','err'); return; }
+  try{ await api('/alerts/',{method:'POST',body:JSON.stringify(body)}); buildNav(); closeModal(); navTo('alerts'); toast('✓ Tahadhari imetumwa kwa wakulima!'); }
+  catch(e){ toast(e.message,'err'); }
+}
+</script>
+</body>
+</html>
