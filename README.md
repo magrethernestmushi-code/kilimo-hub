@@ -24,13 +24,15 @@ kilimo-hub-node/
 │       ├── alerts.js        ← Agri-Intelligence: pest/weather/market alerts
 │       └── admin.js         ← dashboard stats, user/transaction summaries
 └── public/
-    └── app.html             ← farmer-facing app (wired to the API above)
+    ├── index.html           ← marketing site (CTAs link to the farmer app)
+    ├── app.html              ← farmer-facing app (wired to the API above)
+    └── admin.html            ← admin dashboard (wired to the API above)
 ```
 
-Not yet in this repo: the admin dashboard and marketing site (still static
-mockups in the uploaded files, not yet wired), and API routes for the
-business-buyer marketplace (`products`/`orders` tables exist in the schema,
-no routes built yet — no uploaded frontend needs them yet either).
+Not yet in this repo: driver- and business-buyer-facing UI (the backend supports
+those roles and a `/products` marketplace, but no frontend was uploaded for
+them — only the farmer app and admin panel had mockups to wire up), and real
+mobile-money integration (see Security notes below).
 
 ## Local setup
 
@@ -72,6 +74,7 @@ Render assigns `PORT` automatically — the app already reads `process.env.PORT`
 | Groups | `/groups` | list/create/join/delete — collective buying |
 | Logistics | `/logistics` | list/create/book/status/delete — backhaul matching |
 | Markets | `/markets` | list (public) / create / update / delete (admin) |
+| Products | `/products` | list (public) / create / delete-deactivate (admin) — marketplace for business buyers, no frontend yet |
 | Loans | `/loans` | apply, list, approve/reject (admin) — approval raises trust score |
 | Alerts | `/alerts` | list (public, region-scoped) / create / delete (admin) |
 | Admin | `/admin` | `/stats`, `/users/all`, `/transactions/all`, `/seed-markets` |
