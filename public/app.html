@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="sw">
 <head>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Digital Kilimo Hub · Mkulima</title>
@@ -151,16 +153,7 @@ tr:hover td{background:rgba(90,158,82,.025);}
       <div class="sb-name">Kilimo <span>Hub</span></div>
       <div class="sb-sub">Mkulima App · Tanzania</div>
     </div>
-    <div class="sb-nav">
-      <div class="sb-sec">Mkulima</div>
-      <div class="sb-item on" onclick="go('home')"><span class="sb-ico">🏠</span>Nyumbani</div>
-      <div class="sb-item" onclick="go('account')"><span class="sb-ico">🌱</span>Akaunti Yangu</div>
-      <div class="sb-sec">Biashara</div>
-      <div class="sb-item" onclick="go('groups')"><span class="sb-ico">🤝</span>Vikundi vya Pamoja</div>
-      <div class="sb-item" onclick="go('logistics')"><span class="sb-ico">🚛</span>Usafirishaji</div>
-      <div class="sb-item" onclick="go('market')"><span class="sb-ico">📈</span>Bei za Soko</div>
-      <div class="sb-item" onclick="go('credit')"><span class="sb-ico">🏦</span>Mkopo</div>
-    </div>
+    <div class="sb-nav" id="sb-nav"></div>
     <div class="sb-bottom">
       <div class="user-box">
         <div class="user-av" id="user-av">🌱</div>
@@ -204,6 +197,7 @@ async function api(path, opts={}){
 let authToken=localStorage.getItem('kilimo_token')||null;
 let me=null; // full user object from /auth/me
 let authMode='login'; // 'login' | 'register' — which form the account page shows
+let regRole='mkulima'; // which role tab is selected on the register form
 
 async function refreshMe(){
   if(!authToken){ me=null; return; }
@@ -231,13 +225,27 @@ function toast(msg,type='ok'){
 
 /* ═══ NAV ═══ */
 let curPage='home';
-const TITLES={ home:'🏠 Nyumbani', account:'🌱 Akaunti Yangu', groups:'🤝 Vikundi vya Pamoja', logistics:'🚛 Usafirishaji', market:'📈 Bei za Soko', credit:'🏦 Mkopo' };
-const SUBS={ home:'Karibu kwenye Digital Kilimo Hub · Tanzania', account:'Ingia au fungua akaunti mpya', groups:'Jiunge na kikundi kupata bei nzuri zaidi', logistics:'Pata usafirishaji rahisi na salama', market:'Bei za mazao sasa hivi Tanzania nzima', credit:'Alama yako ya uaminifu inakupa nguvu ya mkopo' };
+const ROLE_NAV={
+  mkulima:[['home','🏠','Nyumbani'],['account','🌱','Akaunti Yangu'],['groups','🤝','Vikundi vya Pamoja'],['logistics','🚛','Usafirishaji'],['market','📈','Bei za Soko'],['credit','🏦','Mkopo']],
+  dereva:[['home','🏠','Nyumbani'],['account','🌱','Akaunti Yangu'],['logistics','🚛','Safari Zinazopatikana'],['mytrips','📋','Safari Zangu'],['market','📈','Bei za Soko']],
+  biashara:[['home','🏠','Nyumbani'],['account','🌱','Akaunti Yangu'],['shop','🛍️','Soko la Bidhaa'],['myorders','📦','Maagizo Yangu'],['market','📈','Bei za Soko']],
+};
+const ROLE_LABEL={mkulima:'Mkulima App',dereva:'Dereva App',biashara:'Biashara App'};
+function currentNav(){ return ROLE_NAV[me?me.role:'mkulima']; }
+function buildSidebar(){
+  document.getElementById('sb-nav').innerHTML=currentNav().map(([id,ico,lbl])=>
+    `<div class="sb-item ${id===curPage?'on':''}" onclick="go('${id}')"><span class="sb-ico">${ico}</span>${lbl}</div>`).join('');
+  const sub=document.querySelector('.sb-sub'); if(sub) sub.textContent=(ROLE_LABEL[me?me.role:'mkulima'])+' · Tanzania';
+}
+
+const TITLES={ home:'🏠 Nyumbani', account:'🌱 Akaunti Yangu', groups:'🤝 Vikundi vya Pamoja', logistics:'🚛 Usafirishaji', market:'📈 Bei za Soko', credit:'🏦 Mkopo', mytrips:'📋 Safari Zangu', shop:'🛍️ Soko la Bidhaa', myorders:'📦 Maagizo Yangu' };
+const SUBS={ home:'Karibu kwenye Digital Kilimo Hub · Tanzania', account:'Ingia au fungua akaunti mpya', groups:'Jiunge na kikundi kupata bei nzuri zaidi', logistics:'Pata usafirishaji rahisi na salama', market:'Bei za mazao sasa hivi Tanzania nzima', credit:'Alama yako ya uaminifu inakupa nguvu ya mkopo', mytrips:'Fuatilia safari ulizosajili', shop:'Nunua moja kwa moja kutoka kwa wakulima', myorders:'Historia ya maagizo yako' };
 
 async function go(p){
+  const nav=currentNav();
+  if(!nav.find(n=>n[0]===p)) p=nav[0][0]; // fall back to a page this role actually has
   curPage=p;
-  document.querySelectorAll('.sb-item').forEach(s=>s.classList.remove('on'));
-  document.querySelectorAll('.sb-item').forEach(s=>{ if(s.getAttribute('onclick')&&s.getAttribute('onclick').includes("'"+p+"'")) s.classList.add('on'); });
+  buildSidebar();
   document.getElementById('tb-title').textContent=TITLES[p]||p;
   document.getElementById('tb-sub').textContent=SUBS[p]||'';
   const btn=document.getElementById('action-btn');
@@ -246,10 +254,10 @@ async function go(p){
 
   const content=document.getElementById('content');
   content.innerHTML='<div class="empty"><div class="empty-ico">🌾</div><div class="empty-t">Inapakia...</div></div>';
-  const renders={ home:renderHome, account:renderAccount, groups:renderGroups, logistics:renderLogistics, market:renderMarket, credit:renderCredit };
+  const renders={ home:renderHome, account:renderAccount, groups:renderGroups, logistics:renderLogistics, market:renderMarket, credit:renderCredit, mytrips:renderMyTrips, shop:renderShop, myorders:renderMyOrders };
   const fn=renders[p];
   if(fn){
-    try{ content.innerHTML=await fn(); attachEvents(p); }
+    try{ content.innerHTML=await fn(); attachEvents(p); if(p==='logistics') initFarmerMap(); }
     catch(e){ content.innerHTML=`<div class="empty"><div class="empty-ico">⚠️</div><div class="empty-t">Imeshindikana kupakia</div><div class="empty-s">${e.message}</div></div>`; }
   }
   updateUserBox();
@@ -274,9 +282,15 @@ async function renderHome(){
     api('/groups/?status=Hai'), api('/logistics/?status=Inasubiri'), api('/alerts/'), api('/markets/')
   ]);
   const recentAlerts=alerts.slice(0,2);
+  const role=me?me.role:'mkulima';
+  const QUICK={
+    mkulima:[['🌱',me?'Akaunti Yangu':'Ingia / Jiandikishe','Angalia taarifa zako','account'],['🤝','Vikundi vya Pamoja','Pata bei nzuri zaidi','groups'],['🚛','Panga Usafirishaji','Peleka mazao sokoni salama','logistics'],['🏦','Omba Mkopo','Tumia alama yako','credit']],
+    dereva:[['🌱',me?'Akaunti Yangu':'Ingia / Jiandikishe','Angalia taarifa zako','account'],['🚛','Safari Zinazopatikana','Chukua safari mpya','logistics'],['📋','Safari Zangu','Fuatilia hali ya safari','mytrips'],['📈','Bei za Soko','Taarifa za soko','market']],
+    biashara:[['🌱',me?'Akaunti Yangu':'Ingia / Jiandikishe','Angalia taarifa zako','account'],['🛍️','Soko la Bidhaa','Nunua moja kwa moja','shop'],['📦','Maagizo Yangu','Fuatilia maagizo','myorders'],['📈','Bei za Soko','Taarifa za soko','market']],
+  }[role];
   return `
   <div class="grid2">
-    <div class="stat-g" onclick="go('groups')"><div class="stat-lbl">Vikundi Vinavyosubiri</div><div class="stat-val">${groups.length}</div><div class="stat-sub">Bonyeza kujiunge →</div></div>
+    <div class="stat-g" onclick="go('${role==='dereva'?'logistics':role==='biashara'?'shop':'groups'}')"><div class="stat-lbl">${role==='dereva'?'Safari Zinazosubiri':role==='biashara'?'Bidhaa Zinazopatikana':'Vikundi Vinavyosubiri'}</div><div class="stat-val">${role==='biashara'?'—':role==='dereva'?trips.length:groups.length}</div><div class="stat-sub">Bonyeza kuona →</div></div>
     <div class="stat-g" style="--green:var(--gold)" onclick="go('logistics')"><div class="stat-lbl">Safari Zinazopatikana</div><div class="stat-val" style="color:var(--gold)">${trips.length}</div><div class="stat-sub">Panga usafirishaji →</div></div>
   </div>
   ${recentAlerts.length?`<div class="card" style="margin-bottom:18px">
@@ -292,7 +306,7 @@ async function renderHome(){
     <div class="card">
       <div class="card-head"><div class="card-title">🚀 Hatua za Kuanza</div></div>
       <div style="padding:4px 0">
-        ${[['🌱',me?'Akaunti Yangu':'Ingia / Jiandikishe','Angalia taarifa zako','account'],['🤝','Vikundi vya Pamoja','Pata bei nzuri zaidi','groups'],['🚛','Panga Usafirishaji','Peleka mazao sokoni salama','logistics'],['🏦','Omba Mkopo','Tumia alama yako','credit']].map(([ic,t,s,pg])=>`
+        ${QUICK.map(([ic,t,s,pg])=>`
         <div onclick="go('${pg}')" style="display:flex;gap:14px;align-items:center;padding:14px 20px;border-bottom:1px solid var(--border2);cursor:pointer;transition:padding-left .2s" onmouseover="this.style.paddingLeft='28px'" onmouseout="this.style.paddingLeft='20px'">
           <div style="width:36px;height:36px;background:rgba(90,158,82,.14);border:1px solid rgba(90,158,82,.25);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">${ic}</div>
           <div style="flex:1"><div style="font-weight:700;font-size:13px">${t}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${s}</div></div>
@@ -317,11 +331,11 @@ async function renderHome(){
 /* ═══ ACCOUNT (login / register / profile) ═══ */
 async function renderAccount(){
   if(me){
-    const fp=me.farmer_profile;
+    const fp=me.farmer_profile, dp=me.driver_profile, bp=me.business_profile;
     return `<div style="max-width:600px;margin:0 auto">
     <div style="background:rgba(90,158,82,.1);border:1px solid rgba(90,158,82,.25);border-radius:var(--r);padding:18px 20px;margin-bottom:18px;display:flex;align-items:center;gap:12px">
       <div style="font-size:28px">👤</div>
-      <div><div style="font-weight:700;font-size:14px">Umeingia, ${me.first_name}!</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${fp?`Alama yako: ${fp.trust_score}/1000 · Kiwango: ${fp.tier}`:me.role}</div></div>
+      <div><div style="font-weight:700;font-size:14px">Umeingia, ${me.first_name}!</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${fp?`Alama yako: ${fp.trust_score}/1000 · Kiwango: ${fp.tier}`:dp?`Lori: ${dp.truck_number||'—'} · Safari: ${dp.trips_completed}`:bp?`${bp.business_name||'Biashara'} · Maagizo: ${bp.total_orders}`:me.role}</div></div>
       <button onclick="logout()" style="margin-left:auto;background:rgba(212,88,88,.15);border:1px solid rgba(212,88,88,.3);color:var(--red);font-size:11px;font-weight:700;padding:7px 14px;border-radius:var(--rs);cursor:pointer;font-family:inherit">Toka</button>
     </div>
     <div class="card">
@@ -333,19 +347,29 @@ async function renderAccount(){
         </div>
         <div class="form-grid">
           <div class="form-grp"><label class="form-lbl">Namba ya Simu</label><input class="form-inp" value="${me.phone}" disabled style="opacity:.6"></div>
-          <div class="form-grp"><label class="form-lbl">Njia ya Malipo</label>
-            <select class="form-sel" id="r-pay">${['M-Pesa','Tigo Pesa','Airtel Money'].map(p=>`<option ${fp&&fp.payment_method===p?'selected':''}>${p}</option>`).join('')}</select>
-          </div>
-        </div>
-        <div class="form-grid">
           <div class="form-grp"><label class="form-lbl">Mkoa</label>
             <select class="form-sel" id="r-rg">${['Arusha','Dar es Salaam','Mwanza','Zanzibar','Mtwara','Dodoma','Morogoro','Tanga','Kilimanjaro','Singida','Mbeya','Iringa','Njombe','Lindi'].map(r=>`<option ${me.region===r?'selected':''}>${r}</option>`).join('')}</select>
           </div>
-          <div class="form-grp"><label class="form-lbl">Ukubwa wa Shamba (Hekta)</label><input class="form-inp" id="r-hk" type="number" step="0.1" min="0" value="${fp?fp.farm_size:''}"></div>
         </div>
-        <div class="form-grid one">
-          <div class="form-grp"><label class="form-lbl">Mazao Unayolima</label><input class="form-inp" id="r-cr" value="${fp?fp.crops:''}" placeholder="Mfano: Avokado, Ufuta, Mchele"></div>
+        ${fp?`
+        <div class="form-grid">
+          <div class="form-grp"><label class="form-lbl">Njia ya Malipo</label><select class="form-sel" id="r-pay">${['M-Pesa','Tigo Pesa','Airtel Money'].map(p=>`<option ${fp.payment_method===p?'selected':''}>${p}</option>`).join('')}</select></div>
+          <div class="form-grp"><label class="form-lbl">Ukubwa wa Shamba (Hekta)</label><input class="form-inp" id="r-hk" type="number" step="0.1" min="0" value="${fp.farm_size}"></div>
         </div>
+        <div class="form-grid one"><div class="form-grp"><label class="form-lbl">Mazao Unayolima</label><input class="form-inp" id="r-cr" value="${fp.crops}" placeholder="Mfano: Avokado, Ufuta, Mchele"></div></div>
+        `:dp?`
+        <div class="form-grid">
+          <div class="form-grp"><label class="form-lbl">Namba ya Lori</label><input class="form-inp" id="r-tn" value="${dp.truck_number||''}"></div>
+          <div class="form-grp"><label class="form-lbl">Uwezo (Tani)</label><input class="form-inp" id="r-tc" type="number" step="0.5" value="${dp.truck_capacity||0}"></div>
+        </div>
+        <div class="form-grid one"><div class="form-grp"><label class="form-lbl">Upatikanaji</label>
+          <select class="form-sel" id="r-av"><option value="true" ${dp.is_available?'selected':''}>Nipo Tayari Kwa Safari</option><option value="false" ${!dp.is_available?'selected':''}>Sipatikani Sasa Hivi</option></select>
+        </div></div>
+        `:bp?`
+        <div class="form-grid">
+          <div class="form-grp"><label class="form-lbl">Jina la Biashara</label><input class="form-inp" id="r-bn" value="${bp.business_name||''}"></div>
+          <div class="form-grp"><label class="form-lbl">Aina ya Biashara</label><input class="form-inp" id="r-bt" value="${bp.business_type||''}"></div>
+        </div>`:''}
         <div style="display:flex;justify-content:flex-end;margin-top:8px">
           <button class="btn btn-g" style="padding:13px 32px;font-size:14px" onclick="submitProfileUpdate()">✓ Sasisha Taarifa</button>
         </div>
@@ -353,6 +377,7 @@ async function renderAccount(){
     </div></div>`;
   }
 
+  const rr=regRole;
   return `<div style="max-width:460px;margin:0 auto">
   <div class="card">
     <div class="card-head" style="justify-content:center;gap:0;padding:0">
@@ -367,6 +392,10 @@ async function renderAccount(){
         </div>
         <button class="btn btn-g" style="width:100%;padding:13px;font-size:14px;margin-top:8px" onclick="submitLogin()">Ingia →</button>
       `:`
+        <div style="display:flex;gap:6px;margin-bottom:14px">
+          ${[['mkulima','🌱','Mkulima'],['dereva','🚛','Dereva'],['biashara','🏪','Biashara']].map(([id,ic,lbl])=>`
+          <button onclick="regRole='${id}';go('account')" style="flex:1;padding:10px 4px;border-radius:var(--rs);border:1px solid ${rr===id?'var(--green)':'var(--border)'};background:${rr===id?'rgba(90,158,82,.15)':'var(--surface)'};color:${rr===id?'var(--glow)':'var(--muted)'};font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">${ic} ${lbl}</button>`).join('')}
+        </div>
         <div class="form-grid">
           <div class="form-grp"><label class="form-lbl">Jina la Kwanza *</label><input class="form-inp" id="r-fn" placeholder="Jina la kwanza"></div>
           <div class="form-grp"><label class="form-lbl">Jina la Familia *</label><input class="form-inp" id="r-ln" placeholder="Jina la familia"></div>
@@ -375,18 +404,27 @@ async function renderAccount(){
           <div class="form-grp"><label class="form-lbl">Namba ya Simu *</label><input class="form-inp" id="r-ph" placeholder="+255 7XX XXX XXX"></div>
           <div class="form-grp"><label class="form-lbl">Password *</label><input class="form-inp" id="r-pw" type="password" placeholder="Herufi 6 au zaidi"></div>
         </div>
+        ${rr==='mkulima'?`
         <div class="form-grid">
-          <div class="form-grp"><label class="form-lbl">Njia ya Malipo</label>
-            <select class="form-sel" id="r-pay">${['M-Pesa','Tigo Pesa','Airtel Money'].map(p=>`<option>${p}</option>`).join('')}</select>
-          </div>
-          <div class="form-grp"><label class="form-lbl">Mkoa *</label>
-            <select class="form-sel" id="r-rg"><option value="">Chagua mkoa...</option>${['Arusha','Dar es Salaam','Mwanza','Zanzibar','Mtwara','Dodoma','Morogoro','Tanga','Kilimanjaro','Singida','Mbeya','Iringa','Njombe','Lindi'].map(r=>`<option>${r}</option>`).join('')}</select>
-          </div>
+          <div class="form-grp"><label class="form-lbl">Njia ya Malipo</label><select class="form-sel" id="r-pay">${['M-Pesa','Tigo Pesa','Airtel Money'].map(p=>`<option>${p}</option>`).join('')}</select></div>
+          <div class="form-grp"><label class="form-lbl">Mkoa *</label><select class="form-sel" id="r-rg"><option value="">Chagua mkoa...</option>${['Arusha','Dar es Salaam','Mwanza','Zanzibar','Mtwara','Dodoma','Morogoro','Tanga','Kilimanjaro','Singida','Mbeya','Iringa','Njombe','Lindi'].map(r=>`<option>${r}</option>`).join('')}</select></div>
         </div>
         <div class="form-grid">
           <div class="form-grp"><label class="form-lbl">Ukubwa wa Shamba (Hekta)</label><input class="form-inp" id="r-hk" type="number" step="0.1" min="0" placeholder="2.5"></div>
           <div class="form-grp"><label class="form-lbl">Mazao Unayolima *</label><input class="form-inp" id="r-cr" placeholder="Avokado, Ufuta..."></div>
+        </div>`:rr==='dereva'?`
+        <div class="form-grid">
+          <div class="form-grp"><label class="form-lbl">Namba ya Lori *</label><input class="form-inp" id="r-tn" placeholder="T 123 ABC"></div>
+          <div class="form-grp"><label class="form-lbl">Uwezo (Tani) *</label><input class="form-inp" id="r-tc" type="number" step="0.5" placeholder="8"></div>
         </div>
+        <div class="form-grid one"><div class="form-grp"><label class="form-lbl">Mkoa *</label><select class="form-sel" id="r-rg"><option value="">Chagua mkoa...</option>${['Arusha','Dar es Salaam','Mwanza','Zanzibar','Mtwara','Dodoma','Morogoro','Tanga'].map(r=>`<option>${r}</option>`).join('')}</select></div></div>
+        `:`
+        <div class="form-grid">
+          <div class="form-grp"><label class="form-lbl">Jina la Biashara *</label><input class="form-inp" id="r-bn" placeholder="Fatuma Wholesale"></div>
+          <div class="form-grp"><label class="form-lbl">Aina ya Biashara</label><input class="form-inp" id="r-bt" placeholder="Msambazaji, Duka..."></div>
+        </div>
+        <div class="form-grid one"><div class="form-grp"><label class="form-lbl">Mkoa *</label><select class="form-sel" id="r-rg"><option value="">Chagua mkoa...</option>${['Arusha','Dar es Salaam','Mwanza','Zanzibar','Mtwara','Dodoma','Morogoro','Tanga'].map(r=>`<option>${r}</option>`).join('')}</select></div></div>
+        `}
         <button class="btn btn-g" style="width:100%;padding:13px;font-size:14px;margin-top:8px" onclick="submitRegister()">✓ Jiandikishe Sasa</button>
       `}
     </div>
@@ -409,15 +447,27 @@ async function submitRegister(){
   const last_name=document.getElementById('r-ln').value.trim();
   const phone=document.getElementById('r-ph').value.trim();
   const password=document.getElementById('r-pw').value;
-  const payment_method=document.getElementById('r-pay').value;
   const region=document.getElementById('r-rg').value;
-  const farm_size=parseFloat(document.getElementById('r-hk').value)||0;
-  const crops=document.getElementById('r-cr').value.trim();
-  if(!first_name||!last_name||!phone||!password||!region||!crops){ toast('Jaza sehemu zote zinazohitajika *','err'); return; }
+  const body={ first_name,last_name,phone,password,role:regRole,region };
+
+  if(regRole==='mkulima'){
+    body.payment_method=document.getElementById('r-pay').value;
+    body.farm_size=parseFloat(document.getElementById('r-hk').value)||0;
+    body.crops=document.getElementById('r-cr').value.trim();
+    if(!body.crops){ toast('Jaza sehemu zote zinazohitajika *','err'); return; }
+  } else if(regRole==='dereva'){
+    body.truck_number=document.getElementById('r-tn').value.trim();
+    body.truck_capacity=parseFloat(document.getElementById('r-tc').value)||0;
+    if(!body.truck_number||!body.truck_capacity){ toast('Jaza sehemu zote zinazohitajika *','err'); return; }
+  } else if(regRole==='biashara'){
+    body.business_name=document.getElementById('r-bn').value.trim();
+    body.business_type=document.getElementById('r-bt').value.trim();
+    if(!body.business_name){ toast('Jaza sehemu zote zinazohitajika *','err'); return; }
+  }
+  if(!first_name||!last_name||!phone||!password||!region){ toast('Jaza sehemu zote zinazohitajika *','err'); return; }
+
   try{
-    const data=await api('/auth/register',{method:'POST',body:JSON.stringify({
-      first_name,last_name,phone,password,role:'mkulima',region,farm_size,crops,payment_method
-    })});
+    const data=await api('/auth/register',{method:'POST',body:JSON.stringify(body)});
     authToken=data.access_token; localStorage.setItem('kilimo_token',authToken); me=data.user;
     toast('Karibu Kilimo Hub, '+first_name+'! 🌱'); go('home');
   }catch(e){ toast(e.message,'err'); }
@@ -427,11 +477,20 @@ async function submitProfileUpdate(){
   const body={
     first_name:document.getElementById('r-fn').value.trim(),
     last_name:document.getElementById('r-ln').value.trim(),
-    payment_method:document.getElementById('r-pay').value,
     region:document.getElementById('r-rg').value,
-    farm_size:parseFloat(document.getElementById('r-hk').value)||0,
-    crops:document.getElementById('r-cr').value.trim(),
   };
+  if(me.farmer_profile){
+    body.payment_method=document.getElementById('r-pay').value;
+    body.farm_size=parseFloat(document.getElementById('r-hk').value)||0;
+    body.crops=document.getElementById('r-cr').value.trim();
+  } else if(me.driver_profile){
+    body.truck_number=document.getElementById('r-tn').value.trim();
+    body.truck_capacity=parseFloat(document.getElementById('r-tc').value)||0;
+    body.is_available=document.getElementById('r-av').value==='true';
+  } else if(me.business_profile){
+    body.business_name=document.getElementById('r-bn').value.trim();
+    body.business_type=document.getElementById('r-bt').value.trim();
+  }
   try{
     me=await api('/users/me/update',{method:'PUT',body:JSON.stringify(body)});
     toast('Taarifa zimesasishwa ✓'); updateUserBox();
@@ -474,14 +533,7 @@ async function renderGroups(){
 async function renderLogistics(){
   const avail=await api('/logistics/?status=Inasubiri');
   return `<div class="card">
-    <div style="background:linear-gradient(135deg,#050d14,#080f18);margin:0;height:170px;position:relative;overflow:hidden;border-bottom:1px solid var(--border)">
-      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(88,152,200,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(88,152,200,.04) 1px,transparent 1px);background-size:20px 20px"></div>
-      <div style="position:absolute;top:40%;left:18%;right:30%;height:1.5px;background:linear-gradient(90deg,rgba(90,158,82,.5),rgba(88,152,200,.5));border-radius:2px;transform:rotate(18deg)"></div>
-      <div style="position:absolute;top:30%;left:58%;font-size:16px;transform:translate(-50%,-100%);cursor:default">📍</div>
-      <div style="position:absolute;top:58%;left:72%;font-size:16px;transform:translate(-50%,-100%);cursor:default">🏙️</div>
-      <div style="position:absolute;top:22%;left:17%;font-size:16px;transform:translate(-50%,-100%);cursor:default">📍</div>
-      <div style="position:absolute;bottom:10px;right:12px;font-size:9px;color:rgba(255,255,255,.25)">Tanzania 🇹🇿</div>
-    </div>
+    <div id="farmer-map" style="height:170px;border-bottom:1px solid var(--border);background:#0a1420"></div>
     <div class="card-head"><div class="card-title">🚛 Safari Zinazopatikana (${avail.length})</div></div>
     <div style="padding:8px 12px">
       ${!avail.length?`<div class="empty"><div class="empty-ico">🚛</div><div class="empty-t">Hakuna safari sasa hivi</div><div class="empty-s">Admin atasajili safari mpya hivi karibuni</div></div>`:
@@ -495,6 +547,54 @@ async function renderLogistics(){
 }
 
 /* ═══ MARKET ═══ */
+/* ═══ MY TRIPS (dereva) ═══ */
+async function renderMyTrips(){
+  if(!me) return `<div class="empty"><div class="empty-ico">🚛</div><div class="empty-t">Ingia kwanza</div></div>`;
+  const trips=await api('/logistics/mine/list');
+  if(!trips.length) return `<div class="card"><div class="empty"><div class="empty-ico">📋</div><div class="empty-t">Bado hujasajili safari</div><div class="empty-s">Nenda "Safari Zinazopatikana" kuunda safari mpya</div></div></div>`;
+  return `<div class="card"><div class="card-head"><div class="card-title">📋 Safari Zako (${trips.length})</div></div>
+  <table><thead><tr><th>Njia</th><th>Uzito</th><th>Hali</th><th>Imesajiliwa</th></tr></thead>
+  <tbody>${trips.map(t=>`<tr>
+    <td style="font-weight:700">${t.origin} → ${t.destination}</td>
+    <td>${t.capacity_tons} Tani</td>
+    <td><span class="badge ${t.status==='Safarini'?'b':t.status==='Imekamilika'?'g':t.status==='Imehifadhiwa'?'a':'a'}">${t.status}</span></td>
+    <td>${new Date(t.created_at).toLocaleDateString('sw-TZ')}</td>
+  </tr>`).join('')}</tbody></table></div>`;
+}
+
+/* ═══ SHOP (biashara) ═══ */
+async function renderShop(){
+  const products=await api('/products/');
+  if(!products.length) return `<div class="card"><div class="empty"><div class="empty-ico">🛍️</div><div class="empty-t">Hakuna bidhaa sasa hivi</div><div class="empty-s">Admin ataongeza bidhaa hivi karibuni</div></div></div>`;
+  return `<div class="card"><div class="card-head"><div class="card-title">🛍️ Bidhaa Zinazopatikana (${products.length})</div></div>
+  <div style="padding:8px 12px">
+    ${products.map(p=>`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:14px;margin-bottom:8px;display:flex;gap:12px;align-items:center">
+      <div style="width:44px;height:44px;background:rgba(90,158,82,.14);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0">${p.emoji||'🌾'}</div>
+      <div style="flex:1"><div style="font-weight:700;font-size:13px">${p.name}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">📍 ${p.region||'—'} · Akiba: ${p.stock_kg}kg</div><div style="font-size:13px;color:var(--green);font-weight:700;margin-top:2px">TZS ${Math.round(p.group_price).toLocaleString()}/kg</div></div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="number" min="1" max="${p.stock_kg}" value="10" id="qty-${p.id}" style="width:60px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit;font-size:12px">
+        <button data-pid="${p.id}" style="background:linear-gradient(135deg,var(--green2),var(--green));color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Agiza</button>
+      </div>
+    </div>`).join('')}
+  </div></div>`;
+}
+
+/* ═══ MY ORDERS (biashara) ═══ */
+async function renderMyOrders(){
+  if(!me) return `<div class="empty"><div class="empty-ico">📦</div><div class="empty-t">Ingia kwanza</div></div>`;
+  const orders=await api('/orders/');
+  if(!orders.length) return `<div class="card"><div class="empty"><div class="empty-ico">📦</div><div class="empty-t">Bado hujafanya agizo</div><div class="empty-s">Nenda "Soko la Bidhaa" kuanza kuagiza</div></div></div>`;
+  return `<div class="card"><div class="card-head"><div class="card-title">📦 Maagizo Yako (${orders.length})</div></div>
+  <table><thead><tr><th>Bidhaa</th><th>Kiasi</th><th>Jumla</th><th>Hali</th><th>Tarehe</th></tr></thead>
+  <tbody>${orders.map(o=>`<tr>
+    <td style="font-weight:700">${o.emoji||'🌾'} ${o.product_name||'—'}</td>
+    <td>${o.quantity_kg} kg</td>
+    <td style="color:var(--green);font-weight:700">TZS ${Math.round(o.total_price).toLocaleString()}</td>
+    <td><span class="badge ${o.status==='Imekamilika'?'g':'a'}">${o.status}</span></td>
+    <td>${new Date(o.created_at).toLocaleDateString('sw-TZ')}</td>
+  </tr>`).join('')}</tbody></table></div>`;
+}
+
 async function renderMarket(){
   const markets=await api('/markets/');
   return `<div class="card"><div class="card-head"><div class="card-title">📊 Bei za Soko — Tanzania Sasa Hivi</div></div>
@@ -557,6 +657,34 @@ async function renderCredit(){
   </div>`;
 }
 
+/* ═══ SATELLITE MAP (Leaflet + Esri World Imagery — free, no API key) ═══ */
+const TZ_COORDS={
+  'Arusha':[-3.3869,36.6830],'Dar es Salaam':[-6.7924,39.2083],'Mwanza':[-2.5164,32.9175],
+  'Zanzibar':[-6.1659,39.2026],'Mtwara':[-10.2692,40.1817],'Dodoma':[-6.1630,35.7516],
+  'Morogoro':[-6.8210,37.6613],'Tanga':[-5.0699,39.0988],'Moshi':[-3.3500,37.3333],
+};
+let farmerMapInstance=null;
+async function initFarmerMap(){
+  const el=document.getElementById('farmer-map');
+  if(!el||typeof L==='undefined') return;
+  if(farmerMapInstance){ farmerMapInstance.remove(); farmerMapInstance=null; }
+  const map=L.map('farmer-map',{zoomControl:false,attributionControl:true,dragging:true,scrollWheelZoom:false}).setView([-6.369,34.888],5);
+  farmerMapInstance=map;
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
+    attribution:'Tiles &copy; Esri', maxZoom:17,
+  }).addTo(map);
+  try{
+    const trips=await api('/logistics/?status=Inasubiri');
+    const truckIcon=L.divIcon({html:'🚛',className:'',iconSize:[18,18],iconAnchor:[9,9]});
+    trips.forEach(t=>{
+      const o=TZ_COORDS[t.origin], d=TZ_COORDS[t.destination];
+      if(!o||!d) return;
+      L.polyline([o,d],{color:'#5a9e52',weight:2,opacity:.8,dashArray:'6,6'}).addTo(map);
+      L.marker(o,{icon:truckIcon}).addTo(map).bindPopup(`${t.origin} → ${t.destination}`);
+    });
+  }catch(e){}
+}
+
 function attachEvents(p){
   if(p==='groups'){
     document.querySelectorAll('[data-gid]').forEach(btn=>{
@@ -573,6 +701,20 @@ function attachEvents(p){
         if(!requireLogin()) return;
         try{ const r=await api('/logistics/'+btn.dataset.lid+'/book',{method:'POST'}); toast(r.message); go('logistics'); }
         catch(e){ toast(e.message,'err'); }
+      });
+    });
+  }
+  if(p==='shop'){
+    document.querySelectorAll('[data-pid]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        if(!requireLogin()) return;
+        if(me.role!=='biashara'){ toast('Akaunti za biashara pekee zinaweza kuagiza','err'); return; }
+        const qty=parseFloat(document.getElementById('qty-'+btn.dataset.pid).value)||0;
+        if(qty<=0){ toast('Weka kiasi sahihi','err'); return; }
+        try{
+          const o=await api('/orders/',{method:'POST',body:JSON.stringify({product_id:btn.dataset.pid,quantity_kg:qty})});
+          toast(`✓ Umeagiza ${qty}kg — jumla TZS ${o.total_price.toLocaleString()}`); go('shop');
+        }catch(e){ toast(e.message,'err'); }
       });
     });
   }

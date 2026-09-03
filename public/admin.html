@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="sw">
 <head>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Kilimo Hub · Admin</title>
@@ -463,9 +465,48 @@ async function navTo(id){
   const renders={overview:pgOverview,farmers:pgFarmers,groups:pgGroups,logistics:pgLogistics,products:pgProducts,transactions:pgTransactions,loans:pgLoans,alerts:pgAlerts,markets:pgMarkets};
   const fn=renders[curPage];
   if(fn){
-    try{ document.getElementById('content').innerHTML=await fn(); }
+    try{ document.getElementById('content').innerHTML=await fn(); if(curPage==='overview') initAdminMap(); }
     catch(e){ document.getElementById('content').innerHTML=`<div class="empty"><div class="ei">⚠️</div><div class="et">Imeshindikana kupakia</div><div class="es">${e.message}</div></div>`; }
   }
+}
+
+/* ═══ SATELLITE MAP (Leaflet + Esri World Imagery — free, no API key) ═══ */
+const TZ_COORDS={
+  'Arusha':[-3.3869,36.6830],'Dar es Salaam':[-6.7924,39.2083],'Mwanza':[-2.5164,32.9175],
+  'Zanzibar':[-6.1659,39.2026],'Mtwara':[-10.2692,40.1817],'Dodoma':[-6.1630,35.7516],
+  'Morogoro':[-6.8210,37.6613],'Tanga':[-5.0699,39.0988],'Kilimanjaro':[-3.3444,37.3444],
+  'Singida':[-4.8180,34.7431],'Mbeya':[-8.9094,33.4608],'Iringa':[-7.7669,35.6980],
+  'Njombe':[-9.3333,34.7667],'Lindi':[-9.9985,39.7139],
+};
+const HUB_REGIONS=['Arusha','Mwanza','Zanzibar','Mtwara']; // regional hubs per the funding proposal
+let adminMapInstance=null;
+
+async function initAdminMap(){
+  const el=document.getElementById('admin-map');
+  if(!el||typeof L==='undefined') return;
+  if(adminMapInstance){ adminMapInstance.remove(); adminMapInstance=null; }
+  const map=L.map('admin-map',{zoomControl:true,attributionControl:true}).setView([-6.369,34.888],5.3);
+  adminMapInstance=map;
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
+    attribution:'Tiles &copy; Esri — Source: Esri, Maxar, Earthstar Geographics', maxZoom:17,
+  }).addTo(map);
+
+  const hubIcon=L.divIcon({html:'🌾',className:'',iconSize:[22,22],iconAnchor:[11,11]});
+  HUB_REGIONS.forEach(region=>{
+    const c=TZ_COORDS[region]; if(!c) return;
+    L.marker(c,{icon:hubIcon}).addTo(map).bindPopup(`<b>Kituo cha ${region}</b><br>Micro-hub ya ukusanyaji`);
+  });
+
+  try{
+    const trips=await api('/logistics/?status=Safarini');
+    const truckIcon=L.divIcon({html:'🚛',className:'',iconSize:[20,20],iconAnchor:[10,10]});
+    trips.forEach(t=>{
+      const o=TZ_COORDS[t.origin], d=TZ_COORDS[t.destination];
+      if(!o||!d) return;
+      L.polyline([o,d],{color:'#5a9e52',weight:2,opacity:.8,dashArray:'6,6'}).addTo(map);
+      L.marker(o,{icon:truckIcon}).addTo(map).bindPopup(`<b>${t.truck_number||'Safari'}</b><br>${t.origin} → ${t.destination}`);
+    });
+  }catch(e){ /* trips are a bonus layer — map still works without them */ }
 }
 
 /* ═══ OVERVIEW ═══ */
@@ -502,22 +543,9 @@ async function pgOverview(){
   </div>
   <div class="grid2">
     <div class="cc" style="padding:0">
-      <div style="padding:14px 18px 12px;border-bottom:1px solid var(--border)"><div class="ct" style="margin:0">🗺️ Ramani ya Vituo</div></div>
+      <div style="padding:14px 18px 12px;border-bottom:1px solid var(--border)"><div class="ct" style="margin:0">🛰️ Ramani ya Setilaiti — Vituo na Safari</div></div>
       <div style="padding:10px">
-        <div class="map-box">
-          <div class="mg"></div>
-          <div class="mrl" style="top:38%;left:28%;width:36%;transform:rotate(22deg)"></div>
-          <div class="mrl" style="top:52%;left:22%;width:20%;transform:rotate(-10deg)"></div>
-          <div class="mp" style="top:28%;left:62%">📍</div>
-          <div class="mp" style="top:56%;left:70%">🏙️</div>
-          <div class="mp" style="top:22%;left:17%">📍</div>
-          <div class="mp" style="top:70%;left:80%">🏝️</div>
-          <div class="mp" style="top:78%;left:54%">📍</div>
-          <div style="position:absolute;bottom:8px;left:10px;display:flex;flex-direction:column;gap:3px">
-            <div style="display:flex;align-items:center;gap:5px;font-size:8px;color:rgba(255,255,255,.35)"><div style="width:6px;height:6px;border-radius:50%;background:var(--green)"></div>Kituo</div>
-            <div style="display:flex;align-items:center;gap:5px;font-size:8px;color:rgba(255,255,255,.35)"><div style="width:6px;height:6px;border-radius:50%;background:var(--sky)"></div>Safari</div>
-          </div>
-        </div>
+        <div id="admin-map" style="height:280px;border-radius:12px;overflow:hidden;background:#0a1420"></div>
       </div>
     </div>
     <div class="cc" style="padding:0">
