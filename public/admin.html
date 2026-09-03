@@ -259,6 +259,28 @@ tr:hover td{background:rgba(90,158,82,.025);}
 
 ::-webkit-scrollbar{width:5px;}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:5px;}
+.hamburger{display:none;background:transparent;border:1px solid var(--border);color:var(--text);width:36px;height:36px;border-radius:9px;font-size:16px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;}
+.sb-backdrop{display:none;}
+
+@media (max-width:900px){
+  .sidebar{position:fixed;left:-260px;top:0;bottom:0;width:230px;z-index:300;transition:left .25s ease;box-shadow:8px 0 24px rgba(0,0,0,.4);}
+  .sidebar.open{left:0;}
+  .sb-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:290;}
+  .sb-backdrop.on{display:block;}
+  .hamburger{display:flex;}
+  .topbar{padding:14px;flex-wrap:wrap;gap:10px;}
+  .tb-r{flex-wrap:wrap;gap:8px;}
+  .content{padding:14px 12px !important;}
+  .grid2,.grid31{grid-template-columns:1fr !important;}
+  .stat-grid{grid-template-columns:1fr 1fr !important;}
+  table{font-size:11px;}
+  .tc-head{flex-direction:column;align-items:flex-start !important;gap:10px;}
+  .fg{grid-template-columns:1fr !important;}
+}
+@media (max-width:480px){
+  .stat-grid{grid-template-columns:1fr !important;}
+  .tb-time{display:none;}
+}
 </style>
 </head>
 <body>
@@ -294,7 +316,8 @@ tr:hover td{background:rgba(90,158,82,.025);}
 
 <!-- ═══ MAIN APP ═══ -->
 <div id="app">
-  <div class="sidebar">
+  <div class="sb-backdrop" id="sb-backdrop" onclick="toggleSidebar(false)"></div>
+  <div class="sidebar" id="sidebar">
     <div class="sb-logo">
       <div class="sb-mark">🌾</div>
       <div class="sb-name">Digital Kilimo Hub</div>
@@ -312,9 +335,12 @@ tr:hover td{background:rgba(90,158,82,.025);}
   </div>
   <div class="main">
     <div class="topbar">
-      <div class="tb-l">
-        <div class="tb-title" id="tb-title">📊 Muhtasari</div>
-        <div class="tb-sub" id="tb-sub">Data ya wakati halisi</div>
+      <div class="tb-l" style="display:flex;align-items:center;gap:10px">
+        <button class="hamburger" onclick="toggleSidebar()">☰</button>
+        <div>
+          <div class="tb-title" id="tb-title">📊 Muhtasari</div>
+          <div class="tb-sub" id="tb-sub">Data ya wakati halisi</div>
+        </div>
       </div>
       <div class="tb-r">
         <div class="tb-time" id="clk">--:--:--</div>
@@ -393,6 +419,13 @@ function doLogout(){
   toast('Umetoka kwenye mfumo salama','info');
 }
 
+/* ═══ MOBILE SIDEBAR ═══ */
+function toggleSidebar(force){
+  const sb=document.getElementById('sidebar'), bd=document.getElementById('sb-backdrop');
+  const open=force!==undefined?force:!sb.classList.contains('open');
+  sb.classList.toggle('open',open); bd.classList.toggle('on',open);
+}
+
 /* Restore session if the token still works */
 (async function boot(){
   if(!authToken) return;
@@ -457,6 +490,7 @@ const ADD_BTNS={farmers:'＋ Mkulima',groups:'＋ Kikundi',logistics:'＋ Safari
 const TITLES={overview:'📊 Muhtasari',farmers:'👩🏾‍🌾 Wakulima',groups:'🤝 Vikundi',logistics:'🚛 Usafirishaji',products:'🌾 Bidhaa',transactions:'💳 Miamala',loans:'🏦 Mikopo',alerts:'⚠️ Tahadhari',markets:'📈 Bei za Soko'};
 
 async function navTo(id){
+  if(typeof toggleSidebar==='function') toggleSidebar(false);
   curPage=id; buildNav();
   const btn=document.getElementById('add-btn');
   if(ADD_BTNS[curPage]){ btn.style.display=''; btn.textContent=ADD_BTNS[curPage]; } else btn.style.display='none';

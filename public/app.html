@@ -44,7 +44,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
 .topbar{padding:16px 26px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;position:relative;}
 .topbar::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% -60%,rgba(90,158,82,.05),transparent 60%);pointer-events:none;}
-.tb-left{position:relative;z-index:1;}
+.tb-left{position:relative;z-index:1;display:flex;align-items:center;gap:10px;}
 .tb-title{font-family:var(--font-h);font-size:20px;font-weight:900;}
 .tb-sub{font-size:11px;color:var(--muted);margin-top:3px;}
 .tb-right{position:relative;z-index:1;display:flex;gap:10px;align-items:center;}
@@ -132,6 +132,29 @@ tr:hover td{background:rgba(90,158,82,.025);}
 @keyframes lbar{from{width:0}to{width:100%}}
 ::-webkit-scrollbar{width:5px;height:5px;}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:5px;}
+.hamburger{display:none;background:transparent;border:1px solid var(--border);color:var(--text);width:36px;height:36px;border-radius:9px;font-size:16px;cursor:pointer;align-items:center;justify-content:center;}
+.sb-backdrop{display:none;}
+
+@media (max-width:860px){
+  .sidebar{position:fixed;left:-260px;top:0;bottom:0;width:240px;z-index:300;transition:left .25s ease;box-shadow:8px 0 24px rgba(0,0,0,.4);}
+  .sidebar.open{left:0;}
+  .sb-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:290;}
+  .sb-backdrop.on{display:block;}
+  .hamburger{display:flex;}
+  .topbar{padding:14px 14px;}
+  .tb-title{font-size:15px;}
+  .tb-sub{font-size:10px;}
+  .content{padding:14px 12px !important;}
+  .grid2,.grid31{grid-template-columns:1fr !important;}
+  table{font-size:11px;}
+  .card-title{font-size:13px;}
+  #action-btn{font-size:10px;padding:9px 12px;}
+  .form-grid{grid-template-columns:1fr !important;}
+}
+@media (max-width:420px){
+  .stat-val{font-size:20px !important;}
+  .tb-time{display:none;}
+}
 </style>
 </head>
 <body>
@@ -146,8 +169,9 @@ tr:hover td{background:rgba(90,158,82,.025);}
 </div>
 
 <div id="root" style="display:none">
+  <div class="sb-backdrop" id="sb-backdrop" onclick="toggleSidebar(false)"></div>
   <!-- SIDEBAR -->
-  <div class="sidebar">
+  <div class="sidebar" id="sidebar">
     <div class="sb-logo">
       <div class="sb-mark">🌾</div>
       <div class="sb-name">Kilimo <span>Hub</span></div>
@@ -169,8 +193,11 @@ tr:hover td{background:rgba(90,158,82,.025);}
   <div class="main">
     <div class="topbar">
       <div class="tb-left">
-        <div class="tb-title" id="tb-title">🏠 Nyumbani</div>
-        <div class="tb-sub" id="tb-sub">Karibu kwenye Digital Kilimo Hub</div>
+        <button class="hamburger" onclick="toggleSidebar()">☰</button>
+        <div>
+          <div class="tb-title" id="tb-title">🏠 Nyumbani</div>
+          <div class="tb-sub" id="tb-sub">Karibu kwenye Digital Kilimo Hub</div>
+        </div>
       </div>
       <div class="tb-right">
         <div class="tb-time" id="clk">--:--</div>
@@ -242,6 +269,7 @@ const TITLES={ home:'🏠 Nyumbani', account:'🌱 Akaunti Yangu', groups:'🤝 
 const SUBS={ home:'Karibu kwenye Digital Kilimo Hub · Tanzania', account:'Ingia au fungua akaunti mpya', groups:'Jiunge na kikundi kupata bei nzuri zaidi', logistics:'Pata usafirishaji rahisi na salama', market:'Bei za mazao sasa hivi Tanzania nzima', credit:'Alama yako ya uaminifu inakupa nguvu ya mkopo', mytrips:'Fuatilia safari ulizosajili', shop:'Nunua moja kwa moja kutoka kwa wakulima', myorders:'Historia ya maagizo yako' };
 
 async function go(p){
+  if(typeof toggleSidebar==='function') toggleSidebar(false);
   const nav=currentNav();
   if(!nav.find(n=>n[0]===p)) p=nav[0][0]; // fall back to a page this role actually has
   curPage=p;
@@ -503,6 +531,13 @@ async function submitProfileUpdate(){
 }
 
 function logout(){ authToken=null; me=null; localStorage.removeItem('kilimo_token'); toast('Umetoka kwenye akaunti yako','info'); go('account'); }
+
+/* ═══ MOBILE SIDEBAR ═══ */
+function toggleSidebar(force){
+  const sb=document.getElementById('sidebar'), bd=document.getElementById('sb-backdrop');
+  const open=force!==undefined?force:!sb.classList.contains('open');
+  sb.classList.toggle('open',open); bd.classList.toggle('on',open);
+}
 
 /* ═══ GEOLOCATION ═══ */
 function getLocation(){
