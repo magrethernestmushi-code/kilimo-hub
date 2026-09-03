@@ -100,6 +100,8 @@ CREATE TABLE IF NOT EXISTS logistics_trips (
   departure_time  TIMESTAMPTZ,
   status          VARCHAR(20) DEFAULT 'Inasubiri' CHECK (status IN ('Inasubiri','Imehifadhiwa','Safarini','Imekamilika')),
   booked_by       UUID REFERENCES users(id),
+  pickup_lat      DOUBLE PRECISION,
+  pickup_lng      DOUBLE PRECISION,
   cargo_desc      TEXT,
   created_by      UUID REFERENCES users(id),
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -195,3 +197,11 @@ CREATE INDEX IF NOT EXISTS idx_loans_status          ON loans(status);
 CREATE INDEX IF NOT EXISTS idx_transactions_user     ON transactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_alerts_region         ON alerts(region);
 CREATE INDEX IF NOT EXISTS idx_alerts_active         ON alerts(is_active);
+
+-- Safe migrations for databases created before a column existed (won't affect fresh installs)
+ALTER TABLE logistics_trips ADD COLUMN IF NOT EXISTS pickup_lat DOUBLE PRECISION;
+ALTER TABLE logistics_trips ADD COLUMN IF NOT EXISTS pickup_lng DOUBLE PRECISION;
+ALTER TABLE farmer_profiles ADD COLUMN IF NOT EXISTS home_lat DOUBLE PRECISION;
+ALTER TABLE farmer_profiles ADD COLUMN IF NOT EXISTS home_lng DOUBLE PRECISION;
+ALTER TABLE business_profiles ADD COLUMN IF NOT EXISTS home_lat DOUBLE PRECISION;
+ALTER TABLE business_profiles ADD COLUMN IF NOT EXISTS home_lng DOUBLE PRECISION;

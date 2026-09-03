@@ -44,17 +44,18 @@ router.post('/', requireAuth, requireRole('admin', 'dereva'), async (req, res, n
   } catch (err) { next(err); }
 });
 
-// POST /logistics/:id/book
+// POST /logistics/:id/book — optionally attach the requester's real GPS pickup location
 router.post('/:id/book', requireAuth, async (req, res, next) => {
   try {
+    const { lat, lng } = req.body || {};
     const { rows: tripRows } = await pool.query('SELECT * FROM logistics_trips WHERE id = $1', [req.params.id]);
     const trip = tripRows[0];
     if (!trip) return res.status(404).json({ detail: 'Safari haijapatikana' });
     if (trip.status !== 'Inasubiri') return res.status(400).json({ detail: 'Safari hii haipo wazi tena' });
 
     await pool.query(
-      `UPDATE logistics_trips SET status = 'Imehifadhiwa', booked_by = $1, updated_at = now() WHERE id = $2`,
-      [req.user.id, trip.id]
+      `UPDATE logistics_trips SET status = 'Imehifadhiwa', booked_by = $1, pickup_lat = $2, pickup_lng = $3, updated_at = now() WHERE id = $4`,
+      [req.user.id, (typeof lat === 'number' ? lat : null), (typeof lng === 'number' ? lng : null), trip.id]
     );
     await pool.query(
       `INSERT INTO transactions (id, user_id, type, amount, payment_method, status, notes)

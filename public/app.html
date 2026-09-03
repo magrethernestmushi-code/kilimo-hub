@@ -373,6 +373,11 @@ async function renderAccount(){
         <div style="display:flex;justify-content:flex-end;margin-top:8px">
           <button class="btn btn-g" style="padding:13px 32px;font-size:14px" onclick="submitProfileUpdate()">✓ Sasisha Taarifa</button>
         </div>
+        ${(fp||bp)?`
+        <div style="border-top:1px solid var(--border2);margin-top:16px;padding-top:16px">
+          <div id="loc-status" style="font-size:11px;color:var(--muted);margin-bottom:8px">${(fp&&fp.home_lat)||(bp&&bp.home_lat)?'📍 Mahali pako pameshahifadhiwa — dereva ataona pako':'📍 Bado hujashiriki mahali ulipo'}</div>
+          <button style="width:100%;font-size:12px;padding:11px;background:transparent;border:1px solid var(--green);color:var(--glow);border-radius:var(--rs);cursor:pointer;font-family:inherit;font-weight:700" onclick="shareMyLocation()">📍 Shiriki Mahali Nilipo Sasa</button>
+        </div>`:''}
       </div>
     </div></div>`;
   }
@@ -499,6 +504,28 @@ async function submitProfileUpdate(){
 
 function logout(){ authToken=null; me=null; localStorage.removeItem('kilimo_token'); toast('Umetoka kwenye akaunti yako','info'); go('account'); }
 
+/* ═══ GEOLOCATION ═══ */
+function getLocation(){
+  return new Promise((resolve)=>{
+    if(!navigator.geolocation){ resolve(null); return; }
+    navigator.geolocation.getCurrentPosition(
+      pos=>resolve({lat:pos.coords.latitude,lng:pos.coords.longitude}),
+      err=>resolve(null),
+      {enableHighAccuracy:true,timeout:8000}
+    );
+  });
+}
+async function shareMyLocation(){
+  if(!requireLogin()) return;
+  toast('Tunatafuta mahali ulipo...','info');
+  const loc=await getLocation();
+  if(!loc){ toast('Imeshindikana kupata mahali. Ruhusu GPS kwenye kivinjari chako.','err'); return; }
+  try{
+    me=await api('/users/me/update',{method:'PUT',body:JSON.stringify({home_lat:loc.lat,home_lng:loc.lng})});
+    toast('✓ Mahali pako pamehifadhiwa!'); go('account');
+  }catch(e){ toast(e.message,'err'); }
+}
+
 /* ═══ GROUPS ═══ */
 async function renderGroups(){
   const active=await api('/groups/?status=Hai');
@@ -553,11 +580,12 @@ async function renderMyTrips(){
   const trips=await api('/logistics/mine/list');
   if(!trips.length) return `<div class="card"><div class="empty"><div class="empty-ico">📋</div><div class="empty-t">Bado hujasajili safari</div><div class="empty-s">Nenda "Safari Zinazopatikana" kuunda safari mpya</div></div></div>`;
   return `<div class="card"><div class="card-head"><div class="card-title">📋 Safari Zako (${trips.length})</div></div>
-  <table><thead><tr><th>Njia</th><th>Uzito</th><th>Hali</th><th>Imesajiliwa</th></tr></thead>
+  <table><thead><tr><th>Njia</th><th>Uzito</th><th>Hali</th><th>Mahali pa Kuchukua</th><th>Imesajiliwa</th></tr></thead>
   <tbody>${trips.map(t=>`<tr>
     <td style="font-weight:700">${t.origin} → ${t.destination}</td>
     <td>${t.capacity_tons} Tani</td>
     <td><span class="badge ${t.status==='Safarini'?'b':t.status==='Imekamilika'?'g':t.status==='Imehifadhiwa'?'a':'a'}">${t.status}</span></td>
+    <td>${t.pickup_lat?`<a href="https://www.google.com/maps?q=${t.pickup_lat},${t.pickup_lng}" target="_blank" style="color:var(--sky);font-weight:700">📍 Fungua Ramani</a>`:'<span style="color:var(--dim)">Hakuna GPS</span>'}</td>
     <td>${new Date(t.created_at).toLocaleDateString('sw-TZ')}</td>
   </tr>`).join('')}</tbody></table></div>`;
 }
@@ -699,7 +727,13 @@ function attachEvents(p){
     document.querySelectorAll('[data-lid]').forEach(btn=>{
       btn.addEventListener('click', async ()=>{
         if(!requireLogin()) return;
-        try{ const r=await api('/logistics/'+btn.dataset.lid+'/book',{method:'POST'}); toast(r.message); go('logistics'); }
+        toast('Tunatafuta mahali ulipo...','info');
+        const loc=await getLocation();
+        try{
+          const r=await api('/logistics/'+btn.dataset.lid+'/book',{method:'POST',body:JSON.stringify(loc?{lat:loc.lat,lng:loc.lng}:{})});
+          toast(loc?r.message+' Mahali pako pametumwa kwa dereva 📍':r.message+' (GPS haikupatikana — dereva atawasiliana nawe kwa simu)');
+          go('logistics');
+        }
         catch(e){ toast(e.message,'err'); }
       });
     });

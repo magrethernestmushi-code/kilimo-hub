@@ -48,7 +48,8 @@ router.put('/me/update', async (req, res, next) => {
   try {
     const u = req.user;
     const { first_name, last_name, email, region, farm_size, crops, payment_method,
-      truck_number, truck_capacity, is_available, current_location, business_name, business_type } = req.body;
+      truck_number, truck_capacity, is_available, current_location, business_name, business_type,
+      home_lat, home_lng } = req.body;
 
     const sets = []; const params = [];
     if (first_name) { params.push(titleCase(first_name)); sets.push(`first_name = $${params.length}`); }
@@ -65,6 +66,8 @@ router.put('/me/update', async (req, res, next) => {
       if (farm_size !== undefined) { fparams.push(farm_size); fsets.push(`farm_size = $${fparams.length}`); }
       if (crops !== undefined) { fparams.push(crops); fsets.push(`crops = $${fparams.length}`); }
       if (payment_method !== undefined) { fparams.push(payment_method); fsets.push(`payment_method = $${fparams.length}`); }
+      if (typeof home_lat === 'number') { fparams.push(home_lat); fsets.push(`home_lat = $${fparams.length}`); }
+      if (typeof home_lng === 'number') { fparams.push(home_lng); fsets.push(`home_lng = $${fparams.length}`); }
       if (fsets.length) { fparams.push(u.id); await pool.query(`UPDATE farmer_profiles SET ${fsets.join(', ')}, updated_at = now() WHERE user_id = $${fparams.length}`, fparams); }
     } else if (u.role === 'dereva') {
       const dsets = []; const dparams = [];
@@ -77,6 +80,8 @@ router.put('/me/update', async (req, res, next) => {
       const bsets = []; const bparams = [];
       if (business_name !== undefined) { bparams.push(business_name); bsets.push(`business_name = $${bparams.length}`); }
       if (business_type !== undefined) { bparams.push(business_type); bsets.push(`business_type = $${bparams.length}`); }
+      if (typeof home_lat === 'number') { bparams.push(home_lat); bsets.push(`home_lat = $${bparams.length}`); }
+      if (typeof home_lng === 'number') { bparams.push(home_lng); bsets.push(`home_lng = $${bparams.length}`); }
       if (bsets.length) { bparams.push(u.id); await pool.query(`UPDATE business_profiles SET ${bsets.join(', ')}, updated_at = now() WHERE user_id = $${bparams.length}`, bparams); }
     }
 

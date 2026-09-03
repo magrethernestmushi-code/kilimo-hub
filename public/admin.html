@@ -498,13 +498,17 @@ async function initAdminMap(){
   });
 
   try{
-    const trips=await api('/logistics/?status=Safarini');
+    const trips=await api('/logistics/');
     const truckIcon=L.divIcon({html:'🚛',className:'',iconSize:[20,20],iconAnchor:[10,10]});
-    trips.forEach(t=>{
+    const pinIcon=L.divIcon({html:'📍',className:'',iconSize:[20,20],iconAnchor:[10,20]});
+    trips.filter(t=>t.status==='Safarini').forEach(t=>{
       const o=TZ_COORDS[t.origin], d=TZ_COORDS[t.destination];
       if(!o||!d) return;
       L.polyline([o,d],{color:'#5a9e52',weight:2,opacity:.8,dashArray:'6,6'}).addTo(map);
       L.marker(o,{icon:truckIcon}).addTo(map).bindPopup(`<b>${t.truck_number||'Safari'}</b><br>${t.origin} → ${t.destination}`);
+    });
+    trips.filter(t=>t.pickup_lat&&t.pickup_lng).forEach(t=>{
+      L.marker([t.pickup_lat,t.pickup_lng],{icon:pinIcon}).addTo(map).bindPopup(`<b>Mahali pa Kuchukua (GPS halisi)</b><br>${t.truck_number||'Safari'} — ${t.status}`);
     });
   }catch(e){ /* trips are a bonus layer — map still works without them */ }
 }
