@@ -62,7 +62,15 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .card-title{font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:8px;}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px;}
 .grid31{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:18px;}
-.stat-g{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px;position:relative;overflow:hidden;cursor:pointer;transition:all .2s;}
+.stat-g{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px;position:relative;overflow:hidden;cursor:pointer;transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s;transform-style:preserve-3d;perspective:800px;}
+.stat-g:hover{transform:translateY(-4px) rotateX(4deg) rotateY(-3deg);box-shadow:0 16px 30px rgba(0,0,0,.35);}
+.stat-g:active{transform:translateY(0) scale(.98);}
+@keyframes card3din{ from{opacity:0;transform:rotateX(-12deg) translateY(14px);} to{opacity:1;transform:rotateX(0) translateY(0);} }
+.card,.stat-g{animation:card3din .5s cubic-bezier(.2,.8,.2,1) both;}
+.btn,button{transition:transform .15s, box-shadow .15s;}
+.btn:active,button:active{transform:translateY(1px) scale(.97);}
+#welcome .w-ico{animation:drop .8s cubic-bezier(.34,1.56,.64,1) both, logo3d 3s ease-in-out .8s infinite;transform-style:preserve-3d;}
+@keyframes logo3d{ 0%,100%{transform:rotateY(0deg);} 50%{transform:rotateY(18deg);} }
 .stat-g:hover{border-color:rgba(90,158,82,.35);transform:translateY(-2px);}
 .stat-g::before{content:'';position:absolute;top:-25px;right:-25px;width:80px;height:80px;border-radius:50%;opacity:.06;background:var(--green);}
 .stat-lbl{font-size:9.5px;font-weight:700;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;}
@@ -200,6 +208,7 @@ tr:hover td{background:rgba(90,158,82,.025);}
         </div>
       </div>
       <div class="tb-right">
+        <button id="lang-btn" onclick="toggleLang()" style="background:var(--card);border:1px solid var(--border);color:var(--text);font-family:inherit;font-size:11px;font-weight:700;padding:8px 12px;border-radius:var(--rs);cursor:pointer">🌐 SW</button>
         <div class="tb-time" id="clk">--:--</div>
         <button class="btn btn-g" id="action-btn" onclick="go('account')">+ Ingia / Jiandikishe</button>
       </div>
@@ -225,6 +234,50 @@ let authToken=localStorage.getItem('kilimo_token')||null;
 let me=null; // full user object from /auth/me
 let authMode='login'; // 'login' | 'register' — which form the account page shows
 let regRole='mkulima'; // which role tab is selected on the register form
+
+/* ═══ BILINGUAL (Kiswahili default, English optional) ═══ */
+let lang=localStorage.getItem('kilimo_lang')||'sw';
+const I18N={
+  sw:{ nyumbani:'Nyumbani', akaunti:'Akaunti Yangu', vikundi:'Vikundi vya Pamoja', usafirishaji:'Usafirishaji', bei_soko:'Bei za Soko', mkopo:'Mkopo',
+    safari_zinazopatikana:'Safari Zinazopatikana', safari_zangu:'Safari Zangu', soko_bidhaa:'Soko la Bidhaa', maagizo_yangu:'Maagizo Yangu',
+    karibu:'Karibu kwenye Digital Kilimo Hub · Tanzania', ingia_kwanza:'Ingia kwanza', ingia:'Ingia', jiandikishe:'Jiandikishe Mpya', toka:'Toka',
+    jina_kwanza:'Jina la Kwanza', jina_familia:'Jina la Familia', namba_simu:'Namba ya Simu', password:'Password', mkoa:'Mkoa',
+    hatua_kuanza:'🚀 Hatua za Kuanza', bei_sasa:'📊 Bei Sasa', bei_zote:'Bei Zote →', mgeni:'Mgeni', bonyeza_ingia:'Bonyeza Ingia/Jiandikishe',
+    mfumo_tayari:'Mfumo uko tayari', mkulima:'Mkulima', dereva:'Dereva', biashara:'Biashara',
+    sub_account:'Ingia au fungua akaunti mpya', sub_groups:'Jiunge na kikundi kupata bei nzuri zaidi', sub_logistics:'Pata usafirishaji rahisi na salama',
+    sub_market:'Bei za mazao sasa hivi Tanzania nzima', sub_credit:'Alama yako ya uaminifu inakupa nguvu ya mkopo', sub_mytrips:'Fuatilia safari ulizosajili',
+    sub_shop:'Nunua moja kwa moja kutoka kwa wakulima', sub_myorders:'Historia ya maagizo yako',
+    angalia_taarifa:'Angalia taarifa zako', pata_bei:'Pata bei nzuri zaidi', peleka_mazao:'Peleka mazao sokoni salama', tumia_alama:'Tumia alama yako',
+    chukua_safari:'Chukua safari mpya', fuatilia_hali:'Fuatilia hali ya safari', taarifa_soko:'Taarifa za soko', nunua_mojakwamoja:'Nunua moja kwa moja',
+    fuatilia_maagizo:'Fuatilia maagizo', bonyeza_kuona:'Bonyeza kuona →', panga_usafirishaji:'Panga usafirishaji →',
+    safari_zinazosubiri:'Safari Zinazosubiri', bidhaa_zinazopatikana:'Bidhaa Zinazopatikana', vikundi_vinavyosubiri:'Vikundi Vinavyosubiri',
+    tahadhari_karibuni:'⚠️ Tahadhari za Hivi Karibuni', omba_mkopo:'Omba Mkopo' },
+  en:{ nyumbani:'Home', akaunti:'My Account', vikundi:'Group Buying', usafirishaji:'Logistics', bei_soko:'Market Prices', mkopo:'Credit',
+    safari_zinazopatikana:'Available Trips', safari_zangu:'My Trips', soko_bidhaa:'Marketplace', maagizo_yangu:'My Orders',
+    karibu:'Welcome to Digital Kilimo Hub · Tanzania', ingia_kwanza:'Please log in first', ingia:'Log In', jiandikishe:'Create Account', toka:'Log Out',
+    jina_kwanza:'First Name', jina_familia:'Last Name', namba_simu:'Phone Number', password:'Password', mkoa:'Region',
+    hatua_kuanza:'🚀 Getting Started', bei_sasa:'📊 Current Prices', bei_zote:'All Prices →', mgeni:'Guest', bonyeza_ingia:'Tap to Log In/Register',
+    mfumo_tayari:'System ready', mkulima:'Farmer', dereva:'Driver', biashara:'Business',
+    sub_account:'Log in or create a new account', sub_groups:'Join a group to get a better price', sub_logistics:'Get easy, safe transport',
+    sub_market:'Crop prices across Tanzania right now', sub_credit:'Your trust score gives you borrowing power', sub_mytrips:'Track the trips you have registered',
+    sub_shop:'Buy directly from farmers', sub_myorders:'Your order history',
+    angalia_taarifa:'View your details', pata_bei:'Get a better price', peleka_mazao:'Get your crops to market safely', tumia_alama:'Use your trust score',
+    chukua_safari:'Accept a new trip', fuatilia_hali:'Track trip status', taarifa_soko:'Market information', nunua_mojakwamoja:'Buy directly',
+    fuatilia_maagizo:'Track orders', bonyeza_kuona:'Tap to view →', panga_usafirishaji:'Arrange transport →',
+    safari_zinazosubiri:'Pending Trips', bidhaa_zinazopatikana:'Available Products', vikundi_vinavyosubiri:'Pending Groups',
+    tahadhari_karibuni:'⚠️ Recent Alerts', omba_mkopo:'Apply for Credit' },
+};
+function t(key){ return (I18N[lang]&&I18N[lang][key])||I18N.sw[key]||key; }
+const STATUS_I18N={
+  en:{ 'Hai':'Active','Imejaa':'Full','Imefungwa':'Closed','Imekamilika':'Completed','Inasubiri':'Pending','Imehifadhiwa':'Booked','Safarini':'In Transit',
+    'Imeidhinishwa':'Approved','Imekataliwa':'Rejected','Shaba':'Bronze','Fedha':'Silver','Dhahabu':'Gold','Hatari':'Danger','Angalizo':'Warning','Habari Njema':'Good News','active':'Active','inactive':'Inactive','banned':'Banned' }
+};
+function st(value){ return (lang==='en'&&STATUS_I18N.en[value])||value; }
+function toggleLang(){
+  lang=lang==='sw'?'en':'sw'; localStorage.setItem('kilimo_lang',lang);
+  const btn=document.getElementById('lang-btn'); if(btn) btn.textContent='🌐 '+(lang==='sw'?'SW':'EN');
+  buildSidebar(); go(curPage);
+}
 let liveTrackingTripId=null; // trip currently broadcasting this driver's position
 let liveTrackingWatchId=null;
 
@@ -254,21 +307,24 @@ function toast(msg,type='ok'){
 
 /* ═══ NAV ═══ */
 let curPage='home';
-const ROLE_NAV={
-  mkulima:[['home','🏠','Nyumbani'],['account','🌱','Akaunti Yangu'],['groups','🤝','Vikundi vya Pamoja'],['logistics','🚛','Usafirishaji'],['market','📈','Bei za Soko'],['credit','🏦','Mkopo']],
-  dereva:[['home','🏠','Nyumbani'],['account','🌱','Akaunti Yangu'],['logistics','🚛','Safari Zinazopatikana'],['mytrips','📋','Safari Zangu'],['market','📈','Bei za Soko']],
-  biashara:[['home','🏠','Nyumbani'],['account','🌱','Akaunti Yangu'],['shop','🛍️','Soko la Bidhaa'],['myorders','📦','Maagizo Yangu'],['market','📈','Bei za Soko']],
-};
-const ROLE_LABEL={mkulima:'Mkulima App',dereva:'Dereva App',biashara:'Biashara App'};
-function currentNav(){ return ROLE_NAV[me?me.role:'mkulima']; }
+function ROLE_NAV_FOR(role){
+  const nav={
+    mkulima:[['home','🏠',t('nyumbani')],['account','🌱',t('akaunti')],['groups','🤝',t('vikundi')],['logistics','🚛',t('usafirishaji')],['market','📈',t('bei_soko')],['credit','🏦',t('mkopo')]],
+    dereva:[['home','🏠',t('nyumbani')],['account','🌱',t('akaunti')],['logistics','🚛',t('safari_zinazopatikana')],['mytrips','📋',t('safari_zangu')],['market','📈',t('bei_soko')]],
+    biashara:[['home','🏠',t('nyumbani')],['account','🌱',t('akaunti')],['shop','🛍️',t('soko_bidhaa')],['myorders','📦',t('maagizo_yangu')],['market','📈',t('bei_soko')]],
+  };
+  return nav[role];
+}
+const ROLE_LABEL_KEY={mkulima:'mkulima',dereva:'dereva',biashara:'biashara'};
+function currentNav(){ return ROLE_NAV_FOR(me?me.role:'mkulima'); }
 function buildSidebar(){
   document.getElementById('sb-nav').innerHTML=currentNav().map(([id,ico,lbl])=>
     `<div class="sb-item ${id===curPage?'on':''}" onclick="go('${id}')"><span class="sb-ico">${ico}</span>${lbl}</div>`).join('');
-  const sub=document.querySelector('.sb-sub'); if(sub) sub.textContent=(ROLE_LABEL[me?me.role:'mkulima'])+' · Tanzania';
+  const sub=document.querySelector('.sb-sub'); if(sub) sub.textContent=t(ROLE_LABEL_KEY[me?me.role:'mkulima'])+' App · Tanzania';
 }
 
-const TITLES={ home:'🏠 Nyumbani', account:'🌱 Akaunti Yangu', groups:'🤝 Vikundi vya Pamoja', logistics:'🚛 Usafirishaji', market:'📈 Bei za Soko', credit:'🏦 Mkopo', mytrips:'📋 Safari Zangu', shop:'🛍️ Soko la Bidhaa', myorders:'📦 Maagizo Yangu' };
-const SUBS={ home:'Karibu kwenye Digital Kilimo Hub · Tanzania', account:'Ingia au fungua akaunti mpya', groups:'Jiunge na kikundi kupata bei nzuri zaidi', logistics:'Pata usafirishaji rahisi na salama', market:'Bei za mazao sasa hivi Tanzania nzima', credit:'Alama yako ya uaminifu inakupa nguvu ya mkopo', mytrips:'Fuatilia safari ulizosajili', shop:'Nunua moja kwa moja kutoka kwa wakulima', myorders:'Historia ya maagizo yako' };
+function TITLES_FOR(){ return { home:'🏠 '+t('nyumbani'), account:'🌱 '+t('akaunti'), groups:'🤝 '+t('vikundi'), logistics:'🚛 '+t('usafirishaji'), market:'📈 '+t('bei_soko'), credit:'🏦 '+t('mkopo'), mytrips:'📋 '+t('safari_zangu'), shop:'🛍️ '+t('soko_bidhaa'), myorders:'📦 '+t('maagizo_yangu') }; }
+function SUBS_FOR(){ return { home:t('karibu'), account:t('sub_account'), groups:t('sub_groups'), logistics:t('sub_logistics'), market:t('sub_market'), credit:t('sub_credit'), mytrips:t('sub_mytrips'), shop:t('sub_shop'), myorders:t('sub_myorders') }; }
 
 async function go(p){
   if(typeof toggleSidebar==='function') toggleSidebar(false);
@@ -276,10 +332,10 @@ async function go(p){
   if(!nav.find(n=>n[0]===p)) p=nav[0][0]; // fall back to a page this role actually has
   curPage=p;
   buildSidebar();
-  document.getElementById('tb-title').textContent=TITLES[p]||p;
-  document.getElementById('tb-sub').textContent=SUBS[p]||'';
+  document.getElementById('tb-title').textContent=TITLES_FOR()[p]||p;
+  document.getElementById('tb-sub').textContent=SUBS_FOR()[p]||'';
   const btn=document.getElementById('action-btn');
-  if(p==='account'||p==='home'){ btn.style.display=me?'none':''; btn.textContent='+ Ingia / Jiandikishe'; }
+  if(p==='account'||p==='home'){ btn.style.display=me?'none':''; btn.textContent='+ '+t('ingia')+' / '+t('jiandikishe'); }
   else btn.style.display='none';
 
   const content=document.getElementById('content');
@@ -301,8 +357,8 @@ function updateUserBox(){
     document.getElementById('user-role').textContent=score!=null?('Alama: '+score):me.role;
   } else {
     document.getElementById('user-av').textContent='🌱';
-    document.getElementById('user-name').textContent='Mgeni';
-    document.getElementById('user-role').textContent='Bonyeza Ingia/Jiandikishe';
+    document.getElementById('user-name').textContent=t('mgeni');
+    document.getElementById('user-role').textContent=t('bonyeza_ingia');
   }
 }
 
@@ -314,17 +370,17 @@ async function renderHome(){
   const recentAlerts=alerts.slice(0,2);
   const role=me?me.role:'mkulima';
   const QUICK={
-    mkulima:[['🌱',me?'Akaunti Yangu':'Ingia / Jiandikishe','Angalia taarifa zako','account'],['🤝','Vikundi vya Pamoja','Pata bei nzuri zaidi','groups'],['🚛','Panga Usafirishaji','Peleka mazao sokoni salama','logistics'],['🏦','Omba Mkopo','Tumia alama yako','credit']],
-    dereva:[['🌱',me?'Akaunti Yangu':'Ingia / Jiandikishe','Angalia taarifa zako','account'],['🚛','Safari Zinazopatikana','Chukua safari mpya','logistics'],['📋','Safari Zangu','Fuatilia hali ya safari','mytrips'],['📈','Bei za Soko','Taarifa za soko','market']],
-    biashara:[['🌱',me?'Akaunti Yangu':'Ingia / Jiandikishe','Angalia taarifa zako','account'],['🛍️','Soko la Bidhaa','Nunua moja kwa moja','shop'],['📦','Maagizo Yangu','Fuatilia maagizo','myorders'],['📈','Bei za Soko','Taarifa za soko','market']],
+    mkulima:[['🌱',me?t('akaunti'):t('ingia')+' / '+t('jiandikishe'),t('angalia_taarifa'),'account'],['🤝',t('vikundi'),t('pata_bei'),'groups'],['🚛',t('usafirishaji'),t('peleka_mazao'),'logistics'],['🏦',t('omba_mkopo'),t('tumia_alama'),'credit']],
+    dereva:[['🌱',me?t('akaunti'):t('ingia')+' / '+t('jiandikishe'),t('angalia_taarifa'),'account'],['🚛',t('safari_zinazopatikana'),t('chukua_safari'),'logistics'],['📋',t('safari_zangu'),t('fuatilia_hali'),'mytrips'],['📈',t('bei_soko'),t('taarifa_soko'),'market']],
+    biashara:[['🌱',me?t('akaunti'):t('ingia')+' / '+t('jiandikishe'),t('angalia_taarifa'),'account'],['🛍️',t('soko_bidhaa'),t('nunua_mojakwamoja'),'shop'],['📦',t('maagizo_yangu'),t('fuatilia_maagizo'),'myorders'],['📈',t('bei_soko'),t('taarifa_soko'),'market']],
   }[role];
   return `
   <div class="grid2">
-    <div class="stat-g" onclick="go('${role==='dereva'?'logistics':role==='biashara'?'shop':'groups'}')"><div class="stat-lbl">${role==='dereva'?'Safari Zinazosubiri':role==='biashara'?'Bidhaa Zinazopatikana':'Vikundi Vinavyosubiri'}</div><div class="stat-val">${role==='biashara'?'—':role==='dereva'?trips.length:groups.length}</div><div class="stat-sub">Bonyeza kuona →</div></div>
-    <div class="stat-g" style="--green:var(--gold)" onclick="go('logistics')"><div class="stat-lbl">Safari Zinazopatikana</div><div class="stat-val" style="color:var(--gold)">${trips.length}</div><div class="stat-sub">Panga usafirishaji →</div></div>
+    <div class="stat-g" onclick="go('${role==='dereva'?'logistics':role==='biashara'?'shop':'groups'}')"><div class="stat-lbl">${role==='dereva'?t('safari_zinazosubiri'):role==='biashara'?t('bidhaa_zinazopatikana'):t('vikundi_vinavyosubiri')}</div><div class="stat-val">${role==='biashara'?'—':role==='dereva'?trips.length:groups.length}</div><div class="stat-sub">${t('bonyeza_kuona')}</div></div>
+    <div class="stat-g" style="--green:var(--gold)" onclick="go('logistics')"><div class="stat-lbl">${t('safari_zinazopatikana')}</div><div class="stat-val" style="color:var(--gold)">${trips.length}</div><div class="stat-sub">${t('panga_usafirishaji')}</div></div>
   </div>
   ${recentAlerts.length?`<div class="card" style="margin-bottom:18px">
-    <div class="card-head"><div class="card-title">⚠️ Tahadhari za Hivi Karibuni</div></div>
+    <div class="card-head"><div class="card-title">${t('tahadhari_karibuni')}</div></div>
     <div style="padding:0 0 4px">
       ${recentAlerts.map(a=>`<div style="display:flex;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border2);align-items:flex-start">
         <div style="width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0;background:${a.level==='Hatari'?'var(--red)':a.level==='Habari Njema'?'var(--green)':'var(--gold)'}"></div>
@@ -334,18 +390,18 @@ async function renderHome(){
   </div>`:''}
   <div class="grid31">
     <div class="card">
-      <div class="card-head"><div class="card-title">🚀 Hatua za Kuanza</div></div>
+      <div class="card-head"><div class="card-title">${t('hatua_kuanza')}</div></div>
       <div style="padding:4px 0">
-        ${QUICK.map(([ic,t,s,pg])=>`
+        ${QUICK.map(([ic,lbl,s,pg])=>`
         <div onclick="go('${pg}')" style="display:flex;gap:14px;align-items:center;padding:14px 20px;border-bottom:1px solid var(--border2);cursor:pointer;transition:padding-left .2s" onmouseover="this.style.paddingLeft='28px'" onmouseout="this.style.paddingLeft='20px'">
           <div style="width:36px;height:36px;background:rgba(90,158,82,.14);border:1px solid rgba(90,158,82,.25);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">${ic}</div>
-          <div style="flex:1"><div style="font-weight:700;font-size:13px">${t}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${s}</div></div>
+          <div style="flex:1"><div style="font-weight:700;font-size:13px">${lbl}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${s}</div></div>
           <div style="color:var(--dim);font-size:16px">›</div>
         </div>`).join('')}
       </div>
     </div>
     <div class="card">
-      <div class="card-head"><div class="card-title">📊 Bei Sasa</div></div>
+      <div class="card-head"><div class="card-title">${t('bei_sasa')}</div></div>
       <div style="padding:0 16px">
         ${markets.slice(0,4).map(m=>`
         <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border2)">
@@ -353,7 +409,7 @@ async function renderHome(){
           <div style="text-align:right"><div style="font-family:var(--font-h);font-weight:700;font-size:13px">${Math.round(m.price_tzs).toLocaleString()}</div><div style="font-size:9px;color:${m.trending_up?'var(--green)':'var(--red)'}">${m.trending_up?'↑':'↓'} ${Math.abs(m.change_pct)}%</div></div>
         </div>`).join('')}
       </div>
-      <div style="padding:12px 16px"><button class="btn btn-g" style="width:100%;font-size:11px" onclick="go('market')">Bei Zote →</button></div>
+      <div style="padding:12px 16px"><button class="btn btn-g" style="width:100%;font-size:11px" onclick="go('market')">${t('bei_zote')}</button></div>
     </div>
   </div>`;
 }
@@ -416,19 +472,19 @@ async function renderAccount(){
   return `<div style="max-width:460px;margin:0 auto">
   <div class="card">
     <div class="card-head" style="justify-content:center;gap:0;padding:0">
-      <button onclick="authMode='login';go('account')" style="flex:1;padding:14px;background:${authMode==='login'?'rgba(90,158,82,.12)':'transparent'};border:none;border-bottom:2px solid ${authMode==='login'?'var(--green)':'transparent'};color:${authMode==='login'?'var(--glow)':'var(--muted)'};font-weight:700;font-size:12px;cursor:pointer;font-family:inherit">Ingia</button>
-      <button onclick="authMode='register';go('account')" style="flex:1;padding:14px;background:${authMode==='register'?'rgba(90,158,82,.12)':'transparent'};border:none;border-bottom:2px solid ${authMode==='register'?'var(--green)':'transparent'};color:${authMode==='register'?'var(--glow)':'var(--muted)'};font-weight:700;font-size:12px;cursor:pointer;font-family:inherit">Jiandikishe Mpya</button>
+      <button onclick="authMode='login';go('account')" style="flex:1;padding:14px;background:${authMode==='login'?'rgba(90,158,82,.12)':'transparent'};border:none;border-bottom:2px solid ${authMode==='login'?'var(--green)':'transparent'};color:${authMode==='login'?'var(--glow)':'var(--muted)'};font-weight:700;font-size:12px;cursor:pointer;font-family:inherit">${t('ingia')}</button>
+      <button onclick="authMode='register';go('account')" style="flex:1;padding:14px;background:${authMode==='register'?'rgba(90,158,82,.12)':'transparent'};border:none;border-bottom:2px solid ${authMode==='register'?'var(--green)':'transparent'};color:${authMode==='register'?'var(--glow)':'var(--muted)'};font-weight:700;font-size:12px;cursor:pointer;font-family:inherit">${t('jiandikishe')}</button>
     </div>
     <div style="padding:20px">
       ${authMode==='login'?`
         <div class="form-grid one">
-          <div class="form-grp"><label class="form-lbl">Namba ya Simu *</label><input class="form-inp" id="l-ph" placeholder="+255 7XX XXX XXX"></div>
-          <div class="form-grp"><label class="form-lbl">Password *</label><input class="form-inp" id="l-pw" type="password" placeholder="Nenosiri lako"></div>
+          <div class="form-grp"><label class="form-lbl">${t('namba_simu')} *</label><input class="form-inp" id="l-ph" placeholder="+255 7XX XXX XXX"></div>
+          <div class="form-grp"><label class="form-lbl">${t('password')} *</label><input class="form-inp" id="l-pw" type="password" placeholder="${lang==='en'?'Your password':'Nenosiri lako'}"></div>
         </div>
-        <button class="btn btn-g" style="width:100%;padding:13px;font-size:14px;margin-top:8px" onclick="submitLogin()">Ingia →</button>
+        <button class="btn btn-g" style="width:100%;padding:13px;font-size:14px;margin-top:8px" onclick="submitLogin()">${t('ingia')} →</button>
       `:`
         <div style="display:flex;gap:6px;margin-bottom:14px">
-          ${[['mkulima','🌱','Mkulima'],['dereva','🚛','Dereva'],['biashara','🏪','Biashara']].map(([id,ic,lbl])=>`
+          ${[['mkulima','🌱',t('mkulima')],['dereva','🚛',t('dereva')],['biashara','🏪',t('biashara')]].map(([id,ic,lbl])=>`
           <button onclick="regRole='${id}';go('account')" style="flex:1;padding:10px 4px;border-radius:var(--rs);border:1px solid ${rr===id?'var(--green)':'var(--border)'};background:${rr===id?'rgba(90,158,82,.15)':'var(--surface)'};color:${rr===id?'var(--glow)':'var(--muted)'};font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">${ic} ${lbl}</button>`).join('')}
         </div>
         <div class="form-grid">
@@ -848,6 +904,7 @@ function attachEvents(p){
 
 /* ═══ SPLASH ═══ */
 (async function boot(){
+  const lb=document.getElementById('lang-btn'); if(lb) lb.textContent='🌐 '+(lang==='sw'?'SW':'EN');
   await refreshMe();
   setTimeout(()=>{
     const w=document.getElementById('welcome');
