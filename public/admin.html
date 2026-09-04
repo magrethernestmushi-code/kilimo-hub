@@ -491,6 +491,7 @@ const TITLES={overview:'📊 Muhtasari',farmers:'👩🏾‍🌾 Wakulima',group
 
 async function navTo(id){
   if(typeof toggleSidebar==='function') toggleSidebar(false);
+  if(id!=='overview'&&adminMapPollTimer){ clearInterval(adminMapPollTimer); adminMapPollTimer=null; }
   curPage=id; buildNav();
   const btn=document.getElementById('add-btn');
   if(ADD_BTNS[curPage]){ btn.style.display=''; btn.textContent=ADD_BTNS[curPage]; } else btn.style.display='none';
@@ -515,10 +516,12 @@ const TZ_COORDS={
 const HUB_REGIONS=['Arusha','Mwanza','Zanzibar','Mtwara']; // regional hubs per the funding proposal
 let adminMapInstance=null;
 
+let adminMapPollTimer=null;
 async function initAdminMap(){
   const el=document.getElementById('admin-map');
   if(!el||typeof L==='undefined') return;
   if(adminMapInstance){ adminMapInstance.remove(); adminMapInstance=null; }
+  if(adminMapPollTimer){ clearInterval(adminMapPollTimer); adminMapPollTimer=null; }
   const map=L.map('admin-map',{zoomControl:true,attributionControl:true}).setView([-6.369,34.888],5.3);
   adminMapInstance=map;
   L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
@@ -531,20 +534,34 @@ async function initAdminMap(){
     L.marker(c,{icon:hubIcon}).addTo(map).bindPopup(`<b>Kituo cha ${region}</b><br>Micro-hub ya ukusanyaji`);
   });
 
-  try{
-    const trips=await api('/logistics/');
-    const truckIcon=L.divIcon({html:'🚛',className:'',iconSize:[20,20],iconAnchor:[10,10]});
-    const pinIcon=L.divIcon({html:'📍',className:'',iconSize:[20,20],iconAnchor:[10,20]});
-    trips.filter(t=>t.status==='Safarini').forEach(t=>{
-      const o=TZ_COORDS[t.origin], d=TZ_COORDS[t.destination];
-      if(!o||!d) return;
-      L.polyline([o,d],{color:'#5a9e52',weight:2,opacity:.8,dashArray:'6,6'}).addTo(map);
-      L.marker(o,{icon:truckIcon}).addTo(map).bindPopup(`<b>${t.truck_number||'Safari'}</b><br>${t.origin} → ${t.destination}`);
-    });
-    trips.filter(t=>t.pickup_lat&&t.pickup_lng).forEach(t=>{
-      L.marker([t.pickup_lat,t.pickup_lng],{icon:pinIcon}).addTo(map).bindPopup(`<b>Mahali pa Kuchukua (GPS halisi)</b><br>${t.truck_number||'Safari'} — ${t.status}`);
-    });
-  }catch(e){ /* trips are a bonus layer — map still works without them */ }
+  const pinIcon=L.divIcon({html:'📍',className:'',iconSize:[20,20],iconAnchor:[10,20]});
+  const liveIcon=L.divIcon({html:'<div style="font-size:20px;filter:drop-shadow(0 0 6px rgba(90,158,82,.9))">🚛</div>',className:'',iconSize:[24,24],iconAnchor:[12,12]});
+  const liveMarkers={}; // tripId -> Leaflet marker, so we move it instead of re-creating it
+
+  async function drawTrips(){
+    try{
+      const trips=await api('/logistics/');
+      trips.filter(t=>t.status==='Safarini'&&(!t.current_lat)).forEach(t=>{
+        const o=TZ_COORDS[t.origin], d=TZ_COORDS[t.destination];
+        if(!o||!d) return;
+        L.polyline([o,d],{color:'#5a9e52',weight:2,opacity:.6,dashArray:'6,6'}).addTo(map);
+      });
+      trips.filter(t=>t.pickup_lat&&t.pickup_lng).forEach(t=>{
+        L.marker([t.pickup_lat,t.pickup_lng],{icon:pinIcon}).addTo(map).bindPopup(`<b>Mahali pa Kuchukua</b><br>${t.truck_number||'Safari'} — ${t.status}`);
+      });
+      const liveTripIds=new Set();
+      trips.filter(t=>t.status==='Safarini'&&t.current_lat&&t.current_lng).forEach(t=>{
+        liveTripIds.add(t.id);
+        const ageSec=t.location_updated_at?Math.round((Date.now()-new Date(t.location_updated_at).getTime())/1000):null;
+        const popup=`<b>🔴 MOJA KWA MOJA · ${t.truck_number||'Safari'}</b><br>${t.origin} → ${t.destination}${ageSec!=null?`<br><span style="color:#888">Sasisho: sekunde ${ageSec} zilizopita</span>`:''}`;
+        if(liveMarkers[t.id]){ liveMarkers[t.id].setLatLng([t.current_lat,t.current_lng]).setPopupContent(popup); }
+        else { liveMarkers[t.id]=L.marker([t.current_lat,t.current_lng],{icon:liveIcon}).addTo(map).bindPopup(popup); }
+      });
+      Object.keys(liveMarkers).forEach(id=>{ if(!liveTripIds.has(id)){ map.removeLayer(liveMarkers[id]); delete liveMarkers[id]; } });
+    }catch(e){ /* trips are a bonus layer — map still works without them */ }
+  }
+  await drawTrips();
+  adminMapPollTimer=setInterval(drawTrips,12000); // real polling, not a fake animation — updates as drivers actually report GPS
 }
 
 /* ═══ OVERVIEW ═══ */

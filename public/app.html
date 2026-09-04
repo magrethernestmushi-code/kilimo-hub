@@ -225,6 +225,8 @@ let authToken=localStorage.getItem('kilimo_token')||null;
 let me=null; // full user object from /auth/me
 let authMode='login'; // 'login' | 'register' — which form the account page shows
 let regRole='mkulima'; // which role tab is selected on the register form
+let liveTrackingTripId=null; // trip currently broadcasting this driver's position
+let liveTrackingWatchId=null;
 
 async function refreshMe(){
   if(!authToken){ me=null; return; }
@@ -561,6 +563,25 @@ async function shareMyLocation(){
   }catch(e){ toast(e.message,'err'); }
 }
 
+/* ═══ LIVE DRIVER TRACKING (polling GPS, no external service needed) ═══ */
+function startLiveTracking(tripId){
+  if(!navigator.geolocation){ toast('Kivinjari chako hakiwezi kutuma GPS','err'); return; }
+  liveTrackingTripId=tripId;
+  liveTrackingWatchId=navigator.geolocation.watchPosition(
+    async pos=>{
+      try{ await api('/logistics/'+tripId+'/position',{method:'POST',body:JSON.stringify({lat:pos.coords.latitude,lng:pos.coords.longitude})}); }
+      catch(e){ /* one missed ping isn't worth interrupting the driver */ }
+    },
+    err=>{ toast('GPS imekatika: '+err.message,'err'); stopLiveTracking(); },
+    {enableHighAccuracy:true,maximumAge:5000,timeout:15000}
+  );
+  toast('▶ Unatuma mahali ulipo moja kwa moja. Usifunge ukurasa huu wakati wa safari.');
+}
+function stopLiveTracking(){
+  if(liveTrackingWatchId!==null) navigator.geolocation.clearWatch(liveTrackingWatchId);
+  liveTrackingTripId=null; liveTrackingWatchId=null;
+}
+
 /* ═══ GROUPS ═══ */
 async function renderGroups(){
   const active=await api('/groups/?status=Hai');
@@ -615,13 +636,18 @@ async function renderMyTrips(){
   const trips=await api('/logistics/mine/list');
   if(!trips.length) return `<div class="card"><div class="empty"><div class="empty-ico">📋</div><div class="empty-t">Bado hujasajili safari</div><div class="empty-s">Nenda "Safari Zinazopatikana" kuunda safari mpya</div></div></div>`;
   return `<div class="card"><div class="card-head"><div class="card-title">📋 Safari Zako (${trips.length})</div></div>
-  <table><thead><tr><th>Njia</th><th>Uzito</th><th>Hali</th><th>Mahali pa Kuchukua</th><th>Imesajiliwa</th></tr></thead>
+  <table><thead><tr><th>Njia</th><th>Uzito</th><th>Hali</th><th>Mahali pa Kuchukua</th><th>Vitendo</th></tr></thead>
   <tbody>${trips.map(t=>`<tr>
     <td style="font-weight:700">${t.origin} → ${t.destination}</td>
     <td>${t.capacity_tons} Tani</td>
     <td><span class="badge ${t.status==='Safarini'?'b':t.status==='Imekamilika'?'g':t.status==='Imehifadhiwa'?'a':'a'}">${t.status}</span></td>
-    <td>${t.pickup_lat?`<a href="https://www.google.com/maps?q=${t.pickup_lat},${t.pickup_lng}" target="_blank" style="color:var(--sky);font-weight:700">📍 Fungua Ramani</a>`:'<span style="color:var(--dim)">Hakuna GPS</span>'}</td>
-    <td>${new Date(t.created_at).toLocaleDateString('sw-TZ')}</td>
+    <td>${t.pickup_lat?`<a href="https://www.google.com/maps?q=${t.pickup_lat},${t.pickup_lng}" target="_blank" style="color:var(--sky);font-weight:700">📍 Ramani</a>`:'<span style="color:var(--dim)">—</span>'}</td>
+    <td>
+      ${t.status==='Imehifadhiwa'?`<button data-tid="${t.id}" class="trip-start" style="background:linear-gradient(135deg,var(--green2),var(--green));color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">Anza Safari</button>`
+       :t.status==='Safarini'?`<button data-tid="${t.id}" class="trip-track ${liveTrackingTripId===t.id?'on':''}" style="background:${liveTrackingTripId===t.id?'var(--red)':'var(--sky)'};color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">${liveTrackingTripId===t.id?'⏹ Simamisha':'▶ Fuatilia Moja kwa Moja'}</button>
+         <button data-tid="${t.id}" class="trip-done" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px">✓ Nimefika</button>`
+       :`<span style="color:var(--dim);font-size:11px">—</span>`}
+    </td>
   </tr>`).join('')}</tbody></table></div>`;
 }
 
@@ -772,6 +798,24 @@ function attachEvents(p){
         catch(e){ toast(e.message,'err'); }
       });
     });
+  }
+  if(p==='mytrips'){
+    document.querySelectorAll('.trip-start').forEach(btn=>btn.addEventListener('click', async ()=>{
+      try{ await api('/logistics/'+btn.dataset.tid+'/status',{method:'PATCH',body:JSON.stringify({new_status:'Safarini'})}); toast('✓ Safari imeanza!'); go('mytrips'); }
+      catch(e){ toast(e.message,'err'); }
+    }));
+    document.querySelectorAll('.trip-track').forEach(btn=>btn.addEventListener('click', ()=>{
+      if(liveTrackingTripId===btn.dataset.tid){ stopLiveTracking(); toast('Umesimamisha ufuatiliaji','info'); }
+      else { if(liveTrackingTripId) stopLiveTracking(); startLiveTracking(btn.dataset.tid); }
+      go('mytrips');
+    }));
+    document.querySelectorAll('.trip-done').forEach(btn=>btn.addEventListener('click', async ()=>{
+      try{
+        if(liveTrackingTripId===btn.dataset.tid) stopLiveTracking();
+        await api('/logistics/'+btn.dataset.tid+'/status',{method:'PATCH',body:JSON.stringify({new_status:'Imekamilika'})});
+        toast('✓ Safari imekamilika! Asante.'); go('mytrips');
+      }catch(e){ toast(e.message,'err'); }
+    }));
   }
   if(p==='shop'){
     document.querySelectorAll('[data-pid]').forEach(btn=>{

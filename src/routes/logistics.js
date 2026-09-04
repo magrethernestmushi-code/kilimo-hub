@@ -66,16 +66,22 @@ router.post('/:id/book', requireAuth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// PATCH /logistics/:id/status — [Admin]
-router.patch('/:id/status', requireAuth, requireRole('admin'), async (req, res, next) => {
+// PATCH /logistics/:id/status — [Admin] or the driver assigned to this trip
+router.patch('/:id/status', requireAuth, requireRole('admin', 'dereva'), async (req, res, next) => {
   try {
     const { new_status } = req.body;
     if (!VALID_STATUSES.includes(new_status)) return res.status(422).json({ detail: 'Hali si sahihi' });
+
+    const { rows: existing } = await pool.query('SELECT t.*, d.user_id AS driver_user_id FROM logistics_trips t LEFT JOIN driver_profiles d ON d.id = t.driver_id WHERE t.id = $1', [req.params.id]);
+    if (!existing[0]) return res.status(404).json({ detail: 'Safari haijapatikana' });
+    if (req.user.role === 'dereva' && existing[0].driver_user_id !== req.user.id) {
+      return res.status(403).json({ detail: 'Hii si safari yako' });
+    }
+
     const { rows } = await pool.query(
       'UPDATE logistics_trips SET status = $1, updated_at = now() WHERE id = $2 RETURNING *',
       [new_status, req.params.id]
     );
-    if (!rows[0]) return res.status(404).json({ detail: 'Safari haijapatikana' });
 
     // A completed delivery bumps the assigned driver's trip count — real signal for their rating.
     if (new_status === 'Imekamilika' && rows[0].driver_id) {
@@ -94,7 +100,27 @@ router.delete('/:id', requireAuth, requireRole('admin'), async (req, res, next) 
   } catch (err) { next(err); }
 });
 
-// GET /logistics/mine — trips created by or assigned to the logged-in driver
+// POST /logistics/:id/position — [Dereva] push a live GPS position while a trip is in transit
+router.post('/:id/position', requireAuth, requireRole('dereva', 'admin'), async (req, res, next) => {
+  try {
+    const { lat, lng } = req.body || {};
+    if (typeof lat !== 'number' || typeof lng !== 'number') return res.status(422).json({ detail: 'Lat/lng zinahitajika' });
+
+    const { rows: tripRows } = await pool.query('SELECT t.*, d.user_id AS driver_user_id FROM logistics_trips t LEFT JOIN driver_profiles d ON d.id = t.driver_id WHERE t.id = $1', [req.params.id]);
+    const trip = tripRows[0];
+    if (!trip) return res.status(404).json({ detail: 'Safari haijapatikana' });
+    if (req.user.role === 'dereva' && trip.driver_user_id !== req.user.id) {
+      return res.status(403).json({ detail: 'Hii si safari yako' });
+    }
+    const { rows } = await pool.query(
+      `UPDATE logistics_trips SET current_lat = $1, current_lng = $2, location_updated_at = now() WHERE id = $3 RETURNING id, current_lat, current_lng, location_updated_at`,
+      [lat, lng, trip.id]
+    );
+    res.json(rows[0]);
+  } catch (err) { next(err); }
+});
+
+// GET /logistics/mine/list — trips created by or assigned to the logged-in driver
 router.get('/mine/list', requireAuth, requireRole('dereva', 'admin'), async (req, res, next) => {
   try {
     const { rows: driverRows } = await pool.query('SELECT id FROM driver_profiles WHERE user_id = $1', [req.user.id]);

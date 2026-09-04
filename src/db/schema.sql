@@ -102,6 +102,9 @@ CREATE TABLE IF NOT EXISTS logistics_trips (
   booked_by       UUID REFERENCES users(id),
   pickup_lat      DOUBLE PRECISION,
   pickup_lng      DOUBLE PRECISION,
+  current_lat     DOUBLE PRECISION,
+  current_lng     DOUBLE PRECISION,
+  location_updated_at TIMESTAMPTZ,
   cargo_desc      TEXT,
   created_by      UUID REFERENCES users(id),
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -201,6 +204,9 @@ CREATE INDEX IF NOT EXISTS idx_alerts_active         ON alerts(is_active);
 -- Safe migrations for databases created before a column existed (won't affect fresh installs)
 ALTER TABLE logistics_trips ADD COLUMN IF NOT EXISTS pickup_lat DOUBLE PRECISION;
 ALTER TABLE logistics_trips ADD COLUMN IF NOT EXISTS pickup_lng DOUBLE PRECISION;
+ALTER TABLE logistics_trips ADD COLUMN IF NOT EXISTS current_lat DOUBLE PRECISION;
+ALTER TABLE logistics_trips ADD COLUMN IF NOT EXISTS current_lng DOUBLE PRECISION;
+ALTER TABLE logistics_trips ADD COLUMN IF NOT EXISTS location_updated_at TIMESTAMPTZ;
 ALTER TABLE farmer_profiles ADD COLUMN IF NOT EXISTS home_lat DOUBLE PRECISION;
 ALTER TABLE farmer_profiles ADD COLUMN IF NOT EXISTS home_lng DOUBLE PRECISION;
 ALTER TABLE business_profiles ADD COLUMN IF NOT EXISTS home_lat DOUBLE PRECISION;
