@@ -14,12 +14,12 @@ const VALID_LEVELS = ['Hatari', 'Angalizo', 'Habari Njema'];
 router.get('/', async (req, res, next) => {
   try {
     const { region } = req.query;
-    const params = ['Tanzania nzima'];
     let where = 'WHERE is_active = true';
-    if (region) { params.push(region); where += ` AND (region = $1 OR region = $2)`; }
+    let params = [];
+    if (region) { params = ['Tanzania nzima', region]; where += ` AND (region = $1 OR region = $2)`; }
     const { rows } = await pool.query(
       `SELECT * FROM alerts ${where} ORDER BY created_at DESC LIMIT 20`,
-      region ? params : ['Tanzania nzima']
+      params
     );
     res.json(rows);
   } catch (err) { next(err); }

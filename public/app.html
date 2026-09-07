@@ -309,7 +309,7 @@ function toast(msg,type='ok'){
 let curPage='home';
 function ROLE_NAV_FOR(role){
   const nav={
-    mkulima:[['home','🏠',t('nyumbani')],['account','🌱',t('akaunti')],['groups','🤝',t('vikundi')],['logistics','🚛',t('usafirishaji')],['market','📈',t('bei_soko')],['credit','🏦',t('mkopo')]],
+    mkulima:[['home','🏠',t('nyumbani')],['account','🌱',t('akaunti')],['myproduce','🌽',lang==='en'?'My Produce':'Mazao Yangu'],['groups','🤝',t('vikundi')],['logistics','🚛',t('usafirishaji')],['market','📈',t('bei_soko')],['credit','🏦',t('mkopo')]],
     dereva:[['home','🏠',t('nyumbani')],['account','🌱',t('akaunti')],['logistics','🚛',t('safari_zinazopatikana')],['mytrips','📋',t('safari_zangu')],['market','📈',t('bei_soko')]],
     biashara:[['home','🏠',t('nyumbani')],['account','🌱',t('akaunti')],['shop','🛍️',t('soko_bidhaa')],['myorders','📦',t('maagizo_yangu')],['market','📈',t('bei_soko')]],
   };
@@ -323,8 +323,8 @@ function buildSidebar(){
   const sub=document.querySelector('.sb-sub'); if(sub) sub.textContent=t(ROLE_LABEL_KEY[me?me.role:'mkulima'])+' App · Tanzania';
 }
 
-function TITLES_FOR(){ return { home:'🏠 '+t('nyumbani'), account:'🌱 '+t('akaunti'), groups:'🤝 '+t('vikundi'), logistics:'🚛 '+t('usafirishaji'), market:'📈 '+t('bei_soko'), credit:'🏦 '+t('mkopo'), mytrips:'📋 '+t('safari_zangu'), shop:'🛍️ '+t('soko_bidhaa'), myorders:'📦 '+t('maagizo_yangu') }; }
-function SUBS_FOR(){ return { home:t('karibu'), account:t('sub_account'), groups:t('sub_groups'), logistics:t('sub_logistics'), market:t('sub_market'), credit:t('sub_credit'), mytrips:t('sub_mytrips'), shop:t('sub_shop'), myorders:t('sub_myorders') }; }
+function TITLES_FOR(){ return { home:'🏠 '+t('nyumbani'), account:'🌱 '+t('akaunti'), myproduce:'🌽 '+(lang==='en'?'My Produce':'Mazao Yangu'), groups:'🤝 '+t('vikundi'), logistics:'🚛 '+t('usafirishaji'), market:'📈 '+t('bei_soko'), credit:'🏦 '+t('mkopo'), mytrips:'📋 '+t('safari_zangu'), shop:'🛍️ '+t('soko_bidhaa'), myorders:'📦 '+t('maagizo_yangu') }; }
+function SUBS_FOR(){ return { home:t('karibu'), account:t('sub_account'), myproduce:lang==='en'?'List and manage what you have to sell':'Orodhesha na simamia unachouza', groups:t('sub_groups'), logistics:t('sub_logistics'), market:t('sub_market'), credit:t('sub_credit'), mytrips:t('sub_mytrips'), shop:t('sub_shop'), myorders:t('sub_myorders') }; }
 
 async function go(p){
   if(typeof toggleSidebar==='function') toggleSidebar(false);
@@ -340,7 +340,7 @@ async function go(p){
 
   const content=document.getElementById('content');
   content.innerHTML='<div class="empty"><div class="empty-ico">🌾</div><div class="empty-t">Inapakia...</div></div>';
-  const renders={ home:renderHome, account:renderAccount, groups:renderGroups, logistics:renderLogistics, market:renderMarket, credit:renderCredit, mytrips:renderMyTrips, shop:renderShop, myorders:renderMyOrders };
+  const renders={ home:renderHome, account:renderAccount, myproduce:renderMyProduce, groups:renderGroups, logistics:renderLogistics, market:renderMarket, credit:renderCredit, mytrips:renderMyTrips, shop:renderShop, myorders:renderMyOrders };
   const fn=renders[p];
   if(fn){
     try{ content.innerHTML=await fn(); attachEvents(p); if(p==='logistics') initFarmerMap(); }
@@ -370,7 +370,7 @@ async function renderHome(){
   const recentAlerts=alerts.slice(0,2);
   const role=me?me.role:'mkulima';
   const QUICK={
-    mkulima:[['🌱',me?t('akaunti'):t('ingia')+' / '+t('jiandikishe'),t('angalia_taarifa'),'account'],['🤝',t('vikundi'),t('pata_bei'),'groups'],['🚛',t('usafirishaji'),t('peleka_mazao'),'logistics'],['🏦',t('omba_mkopo'),t('tumia_alama'),'credit']],
+    mkulima:[['🌱',me?t('akaunti'):t('ingia')+' / '+t('jiandikishe'),t('angalia_taarifa'),'account'],['🌽',lang==='en'?'List My Produce':'Orodhesha Mazao','',me?'myproduce':'account'],['🤝',t('vikundi'),t('pata_bei'),'groups'],['🚛',t('usafirishaji'),t('peleka_mazao'),'logistics'],['🏦',t('omba_mkopo'),t('tumia_alama'),'credit']],
     dereva:[['🌱',me?t('akaunti'):t('ingia')+' / '+t('jiandikishe'),t('angalia_taarifa'),'account'],['🚛',t('safari_zinazopatikana'),t('chukua_safari'),'logistics'],['📋',t('safari_zangu'),t('fuatilia_hali'),'mytrips'],['📈',t('bei_soko'),t('taarifa_soko'),'market']],
     biashara:[['🌱',me?t('akaunti'):t('ingia')+' / '+t('jiandikishe'),t('angalia_taarifa'),'account'],['🛍️',t('soko_bidhaa'),t('nunua_mojakwamoja'),'shop'],['📦',t('maagizo_yangu'),t('fuatilia_maagizo'),'myorders'],['📈',t('bei_soko'),t('taarifa_soko'),'market']],
   }[role];
@@ -708,14 +708,51 @@ async function renderMyTrips(){
 }
 
 /* ═══ SHOP (biashara) ═══ */
+/* ═══ MY PRODUCE (mkulima lists their own crops for sale) ═══ */
+async function renderMyProduce(){
+  if(!me) return `<div class="empty"><div class="empty-ico">🌽</div><div class="empty-t">${t('ingia_kwanza')}</div></div>`;
+  const mine=await api('/products/mine');
+  return `<div class="card">
+    <div class="card-head"><div class="card-title">🌽 ${lang==='en'?'My Listed Produce':'Mazao Yangu Yaliyoorodheshwa'} (${mine.length})</div></div>
+    <div style="padding:16px">
+      <div class="form-grid">
+        <div class="form-grp"><label class="form-lbl">${lang==='en'?'Crop name':'Jina la zao'} *</label><input class="form-inp" id="mp-name" placeholder="Avokado Hass"></div>
+        <div class="form-grp"><label class="form-lbl">${lang==='en'?'Grade':'Daraja'}</label><input class="form-inp" id="mp-grade" value="Daraja A"></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-grp"><label class="form-lbl">${lang==='en'?'Quantity (kg)':'Kiasi (kg)'} *</label><input class="form-inp" id="mp-stock" type="number" placeholder="500"></div>
+        <div class="form-grp"><label class="form-lbl">${lang==='en'?'Price per kg (TZS)':'Bei kwa kg (TZS)'} *</label><input class="form-inp" id="mp-price" type="number" placeholder="2200"></div>
+      </div>
+      <button class="btn btn-g" style="width:100%;padding:12px;font-size:13px" onclick="submitMyProduce()">✓ ${lang==='en'?'List This Produce':'Orodhesha Zao Hili'}</button>
+    </div>
+    ${mine.length?`<table><thead><tr><th>${lang==='en'?'Crop':'Zao'}</th><th>${lang==='en'?'Stock':'Akiba'}</th><th>${lang==='en'?'Price/kg':'Bei/kg'}</th><th>${lang==='en'?'Action':'Kitendo'}</th></tr></thead>
+    <tbody>${mine.map(p=>`<tr>
+      <td style="font-weight:700">${p.emoji||'🌾'} ${p.name}</td>
+      <td>${p.stock_kg} kg</td>
+      <td style="color:var(--green);font-weight:700">TZS ${Math.round(p.group_price).toLocaleString()}</td>
+      <td><button data-pid="${p.id}" class="mp-del" style="background:rgba(212,88,88,.15);border:1px solid rgba(212,88,88,.3);color:var(--red);border-radius:8px;padding:6px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">${lang==='en'?'Remove':'Ondoa'}</button></td>
+    </tr>`).join('')}</tbody></table>`:''}
+  </div>`;
+}
+async function submitMyProduce(){
+  const body={
+    name:document.getElementById('mp-name').value.trim(), grade:document.getElementById('mp-grade').value.trim()||'Daraja A',
+    stock_kg:parseFloat(document.getElementById('mp-stock').value)||0, retail_price:(parseFloat(document.getElementById('mp-price').value)||0)*1.15,
+    group_price:parseFloat(document.getElementById('mp-price').value)||0, region:me.region,
+  };
+  if(!body.name||!body.stock_kg||!body.group_price){ toast(lang==='en'?'Fill in all required fields *':'Jaza sehemu zote *','err'); return; }
+  try{ await api('/products/',{method:'POST',body:JSON.stringify(body)}); toast('✓ '+body.name+' '+(lang==='en'?'listed!':'imeorodheshwa!')); go('myproduce'); }
+  catch(e){ toast(e.message,'err'); }
+}
+
 async function renderShop(){
   const products=await api('/products/');
-  if(!products.length) return `<div class="card"><div class="empty"><div class="empty-ico">🛍️</div><div class="empty-t">Hakuna bidhaa sasa hivi</div><div class="empty-s">Admin ataongeza bidhaa hivi karibuni</div></div></div>`;
+  if(!products.length) return `<div class="card"><div class="empty"><div class="empty-ico">🛍️</div><div class="empty-t">Hakuna bidhaa sasa hivi</div><div class="empty-s">Wakulima bado hawajaweka mazao. Rudi baadaye.</div></div></div>`;
   return `<div class="card"><div class="card-head"><div class="card-title">🛍️ Bidhaa Zinazopatikana (${products.length})</div></div>
   <div style="padding:8px 12px">
     ${products.map(p=>`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:14px;margin-bottom:8px;display:flex;gap:12px;align-items:center">
       <div style="width:44px;height:44px;background:rgba(90,158,82,.14);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0">${p.emoji||'🌾'}</div>
-      <div style="flex:1"><div style="font-weight:700;font-size:13px">${p.name}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">📍 ${p.region||'—'} · Akiba: ${p.stock_kg}kg</div><div style="font-size:13px;color:var(--green);font-weight:700;margin-top:2px">TZS ${Math.round(p.group_price).toLocaleString()}/kg</div></div>
+      <div style="flex:1"><div style="font-weight:700;font-size:13px">${p.name}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">📍 ${p.region||'—'} · Akiba: ${p.stock_kg}kg</div><div style="font-size:10px;color:var(--sky);margin-top:2px">👤 ${p.farmer_first_name?p.farmer_first_name+' '+p.farmer_last_name:'—'}</div><div style="font-size:13px;color:var(--green);font-weight:700;margin-top:2px">TZS ${Math.round(p.group_price).toLocaleString()}/kg</div></div>
       <div style="display:flex;align-items:center;gap:6px">
         <input type="number" min="1" max="${p.stock_kg}" value="10" id="qty-${p.id}" style="width:60px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit;font-size:12px">
         <button data-pid="${p.id}" style="background:linear-gradient(135deg,var(--green2),var(--green));color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Agiza</button>
@@ -871,6 +908,13 @@ function attachEvents(p){
         await api('/logistics/'+btn.dataset.tid+'/status',{method:'PATCH',body:JSON.stringify({new_status:'Imekamilika'})});
         toast('✓ Safari imekamilika! Asante.'); go('mytrips');
       }catch(e){ toast(e.message,'err'); }
+    }));
+  }
+  if(p==='myproduce'){
+    document.querySelectorAll('.mp-del').forEach(btn=>btn.addEventListener('click', async ()=>{
+      if(!confirm(lang==='en'?'Remove this listing?':'Ondoa zao hili?')) return;
+      try{ await api('/products/'+btn.dataset.pid,{method:'DELETE'}); toast(lang==='en'?'Removed':'Imeondolewa','info'); go('myproduce'); }
+      catch(e){ toast(e.message,'err'); }
     }));
   }
   if(p==='shop'){
